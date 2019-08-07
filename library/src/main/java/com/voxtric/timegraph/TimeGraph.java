@@ -3,13 +3,15 @@ package com.voxtric.timegraph;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.util.AttributeSet;
-import android.view.SurfaceView;
 import android.view.View;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
+
+import com.voxtric.timegraph.opengl.GraphSurface;
+import com.voxtric.timegraph.opengl.Renderable;
 
 import java.util.ArrayList;
 
@@ -30,7 +32,7 @@ public class TimeGraph extends ConstraintLayout
   private long m_startTimestamp = 0;
   private long m_endTimestamp = 1;
 
-  private SurfaceView m_graphSurfaceView = null;
+  private GraphSurface m_graphSurfaceView = null;
 
   private RelativeLayout m_timeLabelsLayoutView = null;
   private ArrayList<TextView> m_midValueViews = null;
@@ -118,6 +120,20 @@ public class TimeGraph extends ConstraintLayout
   {
     m_startTimestamp = startTimestamp;
     m_endTimestamp = endTimestamp;
+    double timeDifference = (double)(m_endTimestamp - m_startTimestamp);
+    float valueDifference = (m_maxValue - m_minValue);
+
+    float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
+    int coordsIndex = 0;
+    for (Data datum : data)
+    {
+      float xCoord = 1.0f - (float)((m_endTimestamp - datum.timestamp) / timeDifference);
+      float yCoord = (m_maxValue - datum.value) / valueDifference;
+      coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
+      coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
+      coordsIndex += 2;
+    }
+    m_graphSurfaceView.addLine(coords);
   }
 
   public void setMidValueAxisLabels(final float[] midValues)
@@ -192,6 +208,7 @@ public class TimeGraph extends ConstraintLayout
             m_timeLabelViews = new ArrayList<>(timeLabels.length);
           }
 
+          double difference = (double)(m_endTimestamp - m_startTimestamp);
           int index = 0;
           for (; index < timeLabels.length; index++)
           {
@@ -215,7 +232,7 @@ public class TimeGraph extends ConstraintLayout
             }
 
             textView.setText(timeLabels[index].label);
-            float widthMultiplier = 1.0f - (float)((double)(m_endTimestamp - timeLabels[index].timestamp) / (double)(m_endTimestamp - m_startTimestamp));
+            float widthMultiplier = 1.0f - (float)((double)(m_endTimestamp - timeLabels[index].timestamp) / difference);
             float offset = widthMultiplier * m_graphSurfaceView.getWidth();
             textView.animate().translationX(0.0f).setDuration(0).start();
             textView.animate().translationXBy(offset).setDuration(0).start();
@@ -254,7 +271,7 @@ public class TimeGraph extends ConstraintLayout
 
   private void initialise(Context context)
   {
-    m_graphSurfaceView = new SurfaceView(context);
+    m_graphSurfaceView = new GraphSurface(context);
     m_graphSurfaceView.setId(R.id.graph_surface);
     addView(m_graphSurfaceView);
 
