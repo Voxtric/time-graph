@@ -19,7 +19,8 @@ public class MainActivity extends AppCompatActivity
 
     final TimeGraph timeGraph = findViewById(R.id.time_graph);
 
-    timeGraph.setMidValueAxisLabels(new float[] { 4.0f, 8.0f, 12.0f });
+    timeGraph.setMaxValue(10.0f);
+    timeGraph.setMidValueAxisLabels(new float[] { 2.5f, 5.0f, 7.5f });
 
     Random random = new Random();
     TimeGraph.Data[] data = new TimeGraph.Data[500];

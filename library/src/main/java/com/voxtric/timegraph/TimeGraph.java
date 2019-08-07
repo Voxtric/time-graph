@@ -124,66 +124,57 @@ public class TimeGraph extends ConstraintLayout
   {
     if (midValues != null)
     {
-      m_maxValueView.post(new Runnable()
+      if (m_midValueViews == null)
       {
-        @Override
-        public void run()
+        m_midValueViews = new ArrayList<>(midValues.length);
+      }
+
+      int index = 0;
+      for (; index < midValues.length; index++)
+      {
+        if (midValues[index] < m_minValue)
         {
-          if (m_midValueViews == null)
+          throw new IllegalArgumentException("'midValues' array must not contain values lower than the minimum.");
+        }
+        if (midValues[index] > m_maxValue)
+        {
+          throw new IllegalArgumentException("'midValues' array must not contain values greater than the maximum.");
+        }
+
+        TextView textView;
+        if (index >= m_midValueViews.size())
+        {
+          textView = createTextView(getContext());
+          addView(textView);
+          m_midValueViews.add(textView);
+        }
+        else
+        {
+          textView = m_midValueViews.get(index);
+          if (textView == null)
           {
-            m_midValueViews = new ArrayList<>(midValues.length);
-          }
-
-          int index = 0;
-          for (; index < midValues.length; index++)
-          {
-            if (midValues[index] < m_minValue)
-            {
-              throw new IllegalArgumentException("'midValues' array must not contain values lower than the minimum.");
-            }
-            if (midValues[index] > m_maxValue)
-            {
-              throw new IllegalArgumentException("'midValues' array must not contain values greater than the maximum.");
-            }
-
-            TextView textView;
-            if (index >= m_midValueViews.size())
-            {
-              textView = createTextView(getContext());
-              textView.animate().translationYBy(m_maxValueView.getHeight() * 0.5f);
-              addView(textView);
-              m_midValueViews.add(textView);
-            }
-            else
-            {
-              textView = m_midValueViews.get(index);
-              if (textView == null)
-              {
-                textView = createTextView(getContext());
-                textView.animate().translationYBy(m_maxValueView.getHeight() * 0.5f);
-                addView(textView);
-                m_midValueViews.set(index, textView);
-              }
-            }
-
-            textView.setText(String.valueOf(midValues[index]));
-            ConstraintSet constraintSet = new ConstraintSet();
-            constraintSet.clone(TimeGraph.this);
-            constraintSet.connect(textView.getId(), ConstraintSet.RIGHT, m_maxValueView.getId(), ConstraintSet.RIGHT);
-            constraintSet.connect(textView.getId(), ConstraintSet.TOP, m_graphSurfaceView.getId(), ConstraintSet.TOP);
-            constraintSet.connect(textView.getId(), ConstraintSet.BOTTOM, m_graphSurfaceView.getId(), ConstraintSet.BOTTOM);
-            constraintSet.setHorizontalBias(textView.getId(), 1.0f);
-            constraintSet.setVerticalBias(textView.getId(), (m_maxValue - midValues[index]) / (m_maxValue - m_minValue));
-            constraintSet.applyTo(TimeGraph.this);
-          }
-
-          for (int i = m_midValueViews.size() - 1; i >= index; i--)
-          {
-            removeView(m_midValueViews.get(i));
-            m_midValueViews.remove(i);
+            textView = createTextView(getContext());
+            addView(textView);
+            m_midValueViews.set(index, textView);
           }
         }
-      });
+
+        textView.setText(String.valueOf(midValues[index]));
+        ConstraintSet constraintSet = new ConstraintSet();
+        constraintSet.clone(TimeGraph.this);
+        constraintSet.connect(textView.getId(), ConstraintSet.RIGHT, m_maxValueView.getId(), ConstraintSet.RIGHT);
+        constraintSet.connect(textView.getId(), ConstraintSet.TOP, m_graphSurfaceView.getId(), ConstraintSet.TOP);
+        constraintSet.connect(textView.getId(), ConstraintSet.BOTTOM, m_graphSurfaceView.getId(), ConstraintSet.BOTTOM);
+        constraintSet.setHorizontalBias(textView.getId(), 1.0f);
+        constraintSet.setVerticalBias(textView.getId(), (m_maxValue - midValues[index]) / (m_maxValue - m_minValue));
+        constraintSet.applyTo(TimeGraph.this);
+      }
+
+      for (int i = m_midValueViews.size() - 1; i >= index; i--)
+      {
+        removeView(m_midValueViews.get(i));
+        m_midValueViews.remove(i);
+      }
     }
   }
 
@@ -225,8 +216,7 @@ public class TimeGraph extends ConstraintLayout
 
             textView.setText(timeLabels[index].label);
             float widthMultiplier = 1.0f - (float)((double)(m_endTimestamp - timeLabels[index].timestamp) / (double)(m_endTimestamp - m_startTimestamp));
-            float width = getWidth() - (m_maxValueView.getWidth() + dpToPx(getContext(), VALUE_AXIS_MARGIN_DP));
-            float offset = widthMultiplier * width;
+            float offset = widthMultiplier * m_graphSurfaceView.getWidth();
             textView.animate().translationX(0.0f).setDuration(0).start();
             textView.animate().translationXBy(offset).setDuration(0).start();
           }
@@ -265,54 +255,25 @@ public class TimeGraph extends ConstraintLayout
   private void initialise(Context context)
   {
     m_graphSurfaceView = new SurfaceView(context);
-    m_graphSurfaceView.setId(View.generateViewId());
+    m_graphSurfaceView.setId(R.id.graph_surface);
     addView(m_graphSurfaceView);
 
     m_timeLabelsLayoutView = new RelativeLayout(context);
-    m_timeLabelsLayoutView.setId(View.generateViewId());
+    m_timeLabelsLayoutView.setId(R.id.time_labels_layout);
     addView(m_timeLabelsLayoutView);
 
     m_minValueView = new TextView(context);
-    m_minValueView.setId(View.generateViewId());
+    m_minValueView.setId(R.id.min_value);
     m_minValueView.setText(String.valueOf(m_minValue));
     addView(m_minValueView);
 
     m_maxValueView = new TextView(context);
-    m_maxValueView.setId(View.generateViewId());
+    m_maxValueView.setId(R.id.max_value);
     m_maxValueView.setText(String.valueOf(m_maxValue));
     addView(m_maxValueView);
 
     ConstraintSet constraintSet = new ConstraintSet();
-    constraintSet.clone(this);
-
-    // Graph Surface View
-    constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.TOP, getId(), ConstraintSet.TOP);
-    constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.BOTTOM, m_timeLabelsLayoutView.getId(), ConstraintSet.TOP);
-    constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.RIGHT, getId(), ConstraintSet.RIGHT);
-    constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.LEFT, m_maxValueView.getId(), ConstraintSet.RIGHT, m_showValueAxis ? (int)dpToPx(context, VALUE_AXIS_MARGIN_DP) : 0);
-    constraintSet.setHorizontalBias(m_graphSurfaceView.getId(), 0.0f);
-    constraintSet.setVerticalBias(m_graphSurfaceView.getId(), 1.0f);
-
-    // Time Labels Layout View
-    constraintSet.connect(m_timeLabelsLayoutView.getId(), ConstraintSet.BOTTOM, getId(), ConstraintSet.BOTTOM);
-    constraintSet.connect(m_timeLabelsLayoutView.getId(), ConstraintSet.LEFT, m_graphSurfaceView.getId(), ConstraintSet.LEFT);
-    constraintSet.connect(m_timeLabelsLayoutView.getId(), ConstraintSet.RIGHT, m_graphSurfaceView.getId(), ConstraintSet.RIGHT);
-    constraintSet.constrainWidth(m_timeLabelsLayoutView.getId(), m_graphSurfaceView.getWidth());
-    constraintSet.setHorizontalBias(m_timeLabelsLayoutView.getId(), 0.0f);
-    constraintSet.setVerticalBias(m_timeLabelsLayoutView.getId(), 0.0f);
-
-    // Min Value View
-    constraintSet.connect(m_minValueView.getId(), ConstraintSet.BOTTOM, m_graphSurfaceView.getId(), ConstraintSet.BOTTOM);
-    constraintSet.connect(m_minValueView.getId(), ConstraintSet.RIGHT, m_maxValueView.getId(), ConstraintSet.RIGHT);
-    constraintSet.setHorizontalBias(m_minValueView.getId(), 1.0f);
-    constraintSet.setVerticalBias(m_minValueView.getId(), 1.0f);
-
-    // Max Value View
-    constraintSet.connect(m_minValueView.getId(), ConstraintSet.TOP, m_graphSurfaceView.getId(), ConstraintSet.TOP);
-    constraintSet.connect(m_minValueView.getId(), ConstraintSet.LEFT, getId(), ConstraintSet.LEFT);
-    constraintSet.setHorizontalBias(m_maxValueView.getId(), 0.0f);
-    constraintSet.setVerticalBias(m_maxValueView.getId(), 0.0f);
-
+    constraintSet.clone(context, R.layout.graph_view);
     constraintSet.applyTo(this);
 
     if (!m_showTimeAxis)
@@ -324,16 +285,6 @@ public class TimeGraph extends ConstraintLayout
       m_minValueView.setVisibility(View.GONE);
       m_maxValueView.setVisibility(View.GONE);
     }
-
-    m_maxValueView.post(new Runnable()
-    {
-      @Override
-      public void run()
-      {
-        m_minValueView.animate().translationYBy(m_minValueView.getHeight() * 0.5f).setDuration(0).start();
-        m_maxValueView.animate().translationYBy(m_maxValueView.getHeight() * -0.5f).setDuration(0).start();
-      }
-    });
   }
 
   private static TextView createTextView(Context context)
