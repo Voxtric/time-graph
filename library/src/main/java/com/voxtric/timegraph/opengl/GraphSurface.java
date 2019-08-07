@@ -32,15 +32,8 @@ public class GraphSurface extends GLSurfaceView
   public Line addLine(final float[] coords)
   {
     final Line line = new Line(coords);
-    postDelayed(new Runnable()
-    {
-      @Override
-      public void run()
-      {
-        m_renderer.addRenderable(line);
-        requestRender();
-      }
-    }, 1000);
+    m_renderer.addRenderable(line);
+    requestRender();
     return line;
   }
 }

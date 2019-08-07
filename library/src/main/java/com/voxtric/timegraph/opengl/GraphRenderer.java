@@ -10,7 +10,7 @@ import javax.microedition.khronos.opengles.GL10;
 
 public class GraphRenderer implements GLSurfaceView.Renderer
 {
-  private ArrayList<Renderable> m_renderables;
+  private ArrayList<Renderable> m_renderables = new ArrayList<>();
 
   @Override
   public void onSurfaceCreated(GL10 unused, EGLConfig config)
@@ -22,7 +22,6 @@ public class GraphRenderer implements GLSurfaceView.Renderer
   public void onSurfaceChanged(GL10 unused, int width, int height)
   {
     GLES20.glViewport(0, 0, width, height);
-    m_renderables = new ArrayList<>();
   }
 
   @Override
