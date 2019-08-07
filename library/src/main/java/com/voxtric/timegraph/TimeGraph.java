@@ -5,6 +5,7 @@ import android.content.res.TypedArray;
 import android.util.AttributeSet;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -14,21 +15,29 @@ import java.util.ArrayList;
 
 public class TimeGraph extends ConstraintLayout
 {
-  private static final boolean DEFAULT_SHOW_Y_MARGIN = true;
+  private static final boolean DEFAULT_SHOW_TIME_AXIS = true;
+  private static final boolean DEFAULT_SHOW_VALUE_AXIS = true;
   private static final float DEFAULT_MIN_VALUE = 0.0f;
   private static final float DEFAULT_MAX_VALUE = 100.0f;
 
-  private static final float Y_AXIS_MARGIN_DP = 4.0f;
+  private static final float VALUE_AXIS_MARGIN_DP = 4.0f;
 
-  private boolean m_showYMargin = DEFAULT_SHOW_Y_MARGIN;
+  private boolean m_showTimeAxis = DEFAULT_SHOW_TIME_AXIS;
+  private boolean m_showValueAxis = DEFAULT_SHOW_VALUE_AXIS;
   private float m_minValue = DEFAULT_MIN_VALUE;
   private float m_maxValue = DEFAULT_MAX_VALUE;
-  private float[] m_midValues = null;
 
-  private SurfaceView m_surfaceView = null;
+  private long m_startTimestamp = 0;
+  private long m_endTimestamp = 1;
+
+  private SurfaceView m_graphSurfaceView = null;
+
+  private LinearLayout m_timeLabelsLayoutView = null;
+  private ArrayList<TextView> m_midValueViews = null;
+
   private TextView m_minValueView = null;
   private TextView m_maxValueView = null;
-  private ArrayList<TextView> m_midValueViews = null;
+  private ArrayList<TextView> m_timeLabelViews = null;
 
   public TimeGraph(Context context)
   {
@@ -50,9 +59,15 @@ public class TimeGraph extends ConstraintLayout
     initialise(context);
   }
 
-  public void setShowYMargin(boolean value)
+  public void setShowXAxis(boolean value)
   {
-    m_showYMargin = value;
+    m_showTimeAxis = value;
+    m_timeLabelsLayoutView.setVisibility(value ? View.VISIBLE : View.GONE);
+  }
+
+  public void setShowYAxis(boolean value)
+  {
+    m_showValueAxis = value;
 
     ConstraintSet constraintSet = new ConstraintSet();
     constraintSet.clone(this);
@@ -60,20 +75,21 @@ public class TimeGraph extends ConstraintLayout
     {
       m_minValueView.setVisibility(View.VISIBLE);
       m_maxValueView.setVisibility(View.VISIBLE);
-      constraintSet.connect(m_surfaceView.getId(), ConstraintSet.LEFT, m_maxValueView.getId(), ConstraintSet.RIGHT, (int)dpToPx(getContext(), Y_AXIS_MARGIN_DP));
+      constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.LEFT, m_maxValueView.getId(), ConstraintSet.RIGHT, (int)dpToPx(getContext(),
+                                                                                                                                     VALUE_AXIS_MARGIN_DP));
     }
     else
     {
       m_minValueView.setVisibility(View.GONE);
       m_maxValueView.setVisibility(View.GONE);
-      constraintSet.connect(m_surfaceView.getId(), ConstraintSet.LEFT, m_maxValueView.getId(), ConstraintSet.RIGHT, 0);
+      constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.LEFT, m_maxValueView.getId(), ConstraintSet.RIGHT, 0);
     }
     constraintSet.applyTo(this);
   }
 
   public boolean getShowYMargin()
   {
-    return m_showYMargin;
+    return m_showValueAxis;
   }
 
   public void setMinValue(float value)
@@ -98,7 +114,13 @@ public class TimeGraph extends ConstraintLayout
     return m_maxValue;
   }
 
-  public void setMidValues(float[] midValues)
+  public void setFreshData(Data[] data, long startTimestamp, long endTimestamp)
+  {
+    m_startTimestamp = startTimestamp;
+    m_endTimestamp = endTimestamp;
+  }
+
+  public void setMidValueAxisLabels(float[] midValues)
   {
     if (midValues != null)
     {
@@ -107,7 +129,6 @@ public class TimeGraph extends ConstraintLayout
         m_midValueViews = new ArrayList<>(midValues.length);
       }
 
-      int midValueViewCount = m_midValueViews.size();
       int index = 0;
       for (; index < midValues.length; index++)
       {
@@ -144,8 +165,8 @@ public class TimeGraph extends ConstraintLayout
         ConstraintSet constraintSet = new ConstraintSet();
         constraintSet.clone(this);
         constraintSet.connect(textView.getId(), ConstraintSet.RIGHT, m_maxValueView.getId(), ConstraintSet.RIGHT);
-        constraintSet.connect(textView.getId(), ConstraintSet.TOP, m_surfaceView.getId(), ConstraintSet.TOP);
-        constraintSet.connect(textView.getId(), ConstraintSet.BOTTOM, m_surfaceView.getId(), ConstraintSet.BOTTOM);
+        constraintSet.connect(textView.getId(), ConstraintSet.TOP, m_graphSurfaceView.getId(), ConstraintSet.TOP);
+        constraintSet.connect(textView.getId(), ConstraintSet.BOTTOM, m_graphSurfaceView.getId(), ConstraintSet.BOTTOM);
         constraintSet.setHorizontalBias(textView.getId(), 1.0f);
         constraintSet.setVerticalBias(textView.getId(), (m_maxValue - midValues[index]) / (m_maxValue - m_minValue));
         constraintSet.applyTo(this);
@@ -159,16 +180,68 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
+  public void setTimeAxisLabels(final TimeLabel[] timeLabels)
+  {
+    if (timeLabels != null)
+    {
+      m_timeLabelsLayoutView.post(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          if (m_timeLabelViews == null)
+          {
+            m_timeLabelViews = new ArrayList<>(timeLabels.length);
+          }
+
+          int index = 0;
+          for (; index < timeLabels.length; index++)
+          {
+
+            TextView textView;
+            if (index >= m_timeLabelViews.size())
+            {
+              textView = new TextView(getContext());
+              textView.setId(View.generateViewId());
+              m_timeLabelsLayoutView.addView(textView);
+              m_timeLabelViews.add(textView);
+            }
+            else
+            {
+              textView = m_timeLabelViews.get(index);
+              if (textView == null)
+              {
+                textView = new TextView(getContext());
+                textView.setId(View.generateViewId());
+                m_timeLabelsLayoutView.addView(textView);
+                m_timeLabelViews.set(index, textView);
+              }
+            }
+
+            textView.setText(timeLabels[index].label);
+            float widthMultiplier = (float)((double)(m_endTimestamp - timeLabels[index].timestamp) / (double)(m_endTimestamp - m_startTimestamp));
+            float width = getWidth() - (m_maxValueView.getWidth() + dpToPx(getContext(), VALUE_AXIS_MARGIN_DP));
+            float offset = widthMultiplier * width;
+            textView.animate().translationXBy(offset).setDuration(10000).start();
+          }
+
+          for (int i = m_timeLabelViews.size() - 1; i >= index; i--)
+          {
+            removeView(m_timeLabelViews.get(i));
+            m_timeLabelViews.remove(i);
+          }
+        }
+      });
+    }
+  }
+
   private void applyAttributes(Context context, AttributeSet attrs)
   {
-    TypedArray attributes = context.getTheme().obtainStyledAttributes(
-        attrs,
-        R.styleable.TimeGraph,
-        0, 0);
-
+    TypedArray attributes = context.getTheme().obtainStyledAttributes(attrs, R.styleable.TimeGraph, 0, 0);
     try
     {
-      m_showYMargin = attributes.getBoolean(R.styleable.TimeGraph_showYMargin, DEFAULT_SHOW_Y_MARGIN);
+      m_showTimeAxis = attributes.getBoolean(R.styleable.TimeGraph_showTimeAxis, DEFAULT_SHOW_TIME_AXIS);
+      m_showValueAxis = attributes.getBoolean(R.styleable.TimeGraph_showValueAxis, DEFAULT_SHOW_VALUE_AXIS);
       m_minValue = attributes.getFloat(R.styleable.TimeGraph_minValue, DEFAULT_MIN_VALUE);
       m_maxValue = attributes.getFloat(R.styleable.TimeGraph_maxValue, DEFAULT_MAX_VALUE);
 
@@ -185,9 +258,14 @@ public class TimeGraph extends ConstraintLayout
 
   private void initialise(Context context)
   {
-    m_surfaceView = new SurfaceView(context);
-    m_surfaceView.setId(View.generateViewId());
-    addView(m_surfaceView);
+    m_graphSurfaceView = new SurfaceView(context);
+    m_graphSurfaceView.setId(View.generateViewId());
+    addView(m_graphSurfaceView);
+
+    m_timeLabelsLayoutView = new LinearLayout(context);
+    m_timeLabelsLayoutView.setId(View.generateViewId());
+    m_timeLabelsLayoutView.setOrientation(LinearLayout.HORIZONTAL);
+    addView(m_timeLabelsLayoutView);
 
     m_minValueView = new TextView(context);
     m_minValueView.setId(View.generateViewId());
@@ -202,24 +280,41 @@ public class TimeGraph extends ConstraintLayout
     ConstraintSet constraintSet = new ConstraintSet();
     constraintSet.clone(this);
 
-    constraintSet.connect(m_surfaceView.getId(), ConstraintSet.TOP, getId(), ConstraintSet.TOP);
-    constraintSet.connect(m_surfaceView.getId(), ConstraintSet.BOTTOM, getId(), ConstraintSet.BOTTOM);
-    constraintSet.connect(m_surfaceView.getId(), ConstraintSet.RIGHT, getId(), ConstraintSet.RIGHT);
-    constraintSet.connect(m_surfaceView.getId(), ConstraintSet.LEFT, m_maxValueView.getId(), ConstraintSet.RIGHT, m_showYMargin ? (int)dpToPx(context, Y_AXIS_MARGIN_DP) : 0);
-    constraintSet.setHorizontalBias(m_surfaceView.getId(), 0.0f);
+    // Graph Surface View
+    constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.TOP, getId(), ConstraintSet.TOP);
+    constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.BOTTOM, m_timeLabelsLayoutView.getId(), ConstraintSet.TOP);
+    constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.RIGHT, getId(), ConstraintSet.RIGHT);
+    constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.LEFT, m_maxValueView.getId(), ConstraintSet.RIGHT, m_showValueAxis ? (int)dpToPx(context,
+                                                                                                                                                     VALUE_AXIS_MARGIN_DP) : 0);
+    constraintSet.setHorizontalBias(m_graphSurfaceView.getId(), 0.0f);
+    constraintSet.setVerticalBias(m_graphSurfaceView.getId(), 1.0f);
 
-    constraintSet.connect(m_minValueView.getId(), ConstraintSet.BOTTOM, m_surfaceView.getId(), ConstraintSet.BOTTOM);
+    // Time Labels Layout View
+    constraintSet.connect(m_timeLabelsLayoutView.getId(), ConstraintSet.BOTTOM, getId(), ConstraintSet.BOTTOM);
+    constraintSet.connect(m_timeLabelsLayoutView.getId(), ConstraintSet.LEFT, m_graphSurfaceView.getId(), ConstraintSet.LEFT);
+    constraintSet.connect(m_timeLabelsLayoutView.getId(), ConstraintSet.RIGHT, m_graphSurfaceView.getId(), ConstraintSet.RIGHT);
+    constraintSet.setHorizontalBias(m_timeLabelsLayoutView.getId(), 0.0f);
+    constraintSet.setVerticalBias(m_timeLabelsLayoutView.getId(), 0.0f);
+
+    // Min Value View
+    constraintSet.connect(m_minValueView.getId(), ConstraintSet.BOTTOM, m_graphSurfaceView.getId(), ConstraintSet.BOTTOM);
     constraintSet.connect(m_minValueView.getId(), ConstraintSet.RIGHT, m_maxValueView.getId(), ConstraintSet.RIGHT);
     constraintSet.setHorizontalBias(m_minValueView.getId(), 1.0f);
     constraintSet.setVerticalBias(m_minValueView.getId(), 1.0f);
 
-    constraintSet.connect(m_minValueView.getId(), ConstraintSet.TOP, m_surfaceView.getId(), ConstraintSet.TOP);
+    // Max Value View
+    constraintSet.connect(m_minValueView.getId(), ConstraintSet.TOP, m_graphSurfaceView.getId(), ConstraintSet.TOP);
     constraintSet.connect(m_minValueView.getId(), ConstraintSet.LEFT, getId(), ConstraintSet.LEFT);
+    constraintSet.setHorizontalBias(m_maxValueView.getId(), 0.0f);
     constraintSet.setVerticalBias(m_maxValueView.getId(), 0.0f);
 
     constraintSet.applyTo(this);
 
-    if (!m_showYMargin)
+    if (!m_showTimeAxis)
+    {
+      m_timeLabelsLayoutView.setVisibility(View.GONE);
+    }
+    if (!m_showValueAxis)
     {
       m_minValueView.setVisibility(View.GONE);
       m_maxValueView.setVisibility(View.GONE);
@@ -234,5 +329,29 @@ public class TimeGraph extends ConstraintLayout
   private static float pxToDp(Context context, float px)
   {
     return px / context.getResources().getDisplayMetrics().density;
+  }
+
+  public static class TimeLabel
+  {
+    public long timestamp;
+    public String label;
+
+    public TimeLabel(long timestamp, String label)
+    {
+      this.timestamp = timestamp;
+      this.label = label;
+    }
+  }
+
+  public static class Data
+  {
+    public long timestamp;
+    public float value;
+
+    public Data(long timestamp, float value)
+    {
+      this.timestamp = timestamp;
+      this.value = value;
+    }
   }
 }

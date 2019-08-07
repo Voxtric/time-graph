@@ -14,7 +14,7 @@
         android:layout_height="200dp"
         android:layout_marginBottom="16dp"
         app:minValue="0.0"
-        app:maxValue="20.0"/>
+        app:maxValue="16.0"/>
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -24,7 +24,6 @@
             android:id="@+id/surface"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_marginLeft="4dp"
             android:layout_marginStart="4dp"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toTopOf="@id/timestamp_labels"

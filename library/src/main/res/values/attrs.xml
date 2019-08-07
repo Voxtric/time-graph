@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="TimeGraph">
-        <attr name="showYMargin" format="boolean"/>
+        <attr name="showTimeAxis" format="boolean"/>
+        <attr name="showValueAxis" format="boolean"/>
         <attr name="minValue" format="float"/>
         <attr name="maxValue" format="float"/>
     </declare-styleable>
