@@ -26,10 +26,10 @@ public class MainActivity extends AppCompatActivity
     {
       data[i] = new TimeGraph.Data((i * 1000) + (random.nextInt() % 999), random.nextFloat() * 16.0f);
     }
-    timeGraph.setFreshData(data, 10000, 100000);
+    timeGraph.setFreshData(data, 10000, 110000);
 
     timeGraph.setTimeAxisLabels(new TimeGraph.TimeLabel[] {
-          new TimeGraph.TimeLabel(50000, "Test A")/*,
+          new TimeGraph.TimeLabel(0, "Test A")/*,
           new TimeGraph.TimeLabel(30000, "In it"),
           new TimeGraph.TimeLabel(90000, "Ending")*/
         });

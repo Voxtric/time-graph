@@ -219,10 +219,10 @@ public class TimeGraph extends ConstraintLayout
             }
 
             textView.setText(timeLabels[index].label);
-            float widthMultiplier = (float)((double)(m_endTimestamp - timeLabels[index].timestamp) / (double)(m_endTimestamp - m_startTimestamp));
+            float widthMultiplier = 1.0f - (float)((double)(m_endTimestamp - timeLabels[index].timestamp) / (double)(m_endTimestamp - m_startTimestamp));
             float width = getWidth() - (m_maxValueView.getWidth() + dpToPx(getContext(), VALUE_AXIS_MARGIN_DP));
             float offset = widthMultiplier * width;
-            textView.animate().translationXBy(offset).setDuration(10000).start();
+            textView.animate().translationXBy(offset).setDuration(0).start();
           }
 
           for (int i = m_timeLabelViews.size() - 1; i >= index; i--)
@@ -284,8 +284,7 @@ public class TimeGraph extends ConstraintLayout
     constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.TOP, getId(), ConstraintSet.TOP);
     constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.BOTTOM, m_timeLabelsLayoutView.getId(), ConstraintSet.TOP);
     constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.RIGHT, getId(), ConstraintSet.RIGHT);
-    constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.LEFT, m_maxValueView.getId(), ConstraintSet.RIGHT, m_showValueAxis ? (int)dpToPx(context,
-                                                                                                                                                     VALUE_AXIS_MARGIN_DP) : 0);
+    constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.LEFT, m_maxValueView.getId(), ConstraintSet.RIGHT, m_showValueAxis ? (int)dpToPx(context, VALUE_AXIS_MARGIN_DP) : 0);
     constraintSet.setHorizontalBias(m_graphSurfaceView.getId(), 0.0f);
     constraintSet.setVerticalBias(m_graphSurfaceView.getId(), 1.0f);
 
@@ -293,6 +292,7 @@ public class TimeGraph extends ConstraintLayout
     constraintSet.connect(m_timeLabelsLayoutView.getId(), ConstraintSet.BOTTOM, getId(), ConstraintSet.BOTTOM);
     constraintSet.connect(m_timeLabelsLayoutView.getId(), ConstraintSet.LEFT, m_graphSurfaceView.getId(), ConstraintSet.LEFT);
     constraintSet.connect(m_timeLabelsLayoutView.getId(), ConstraintSet.RIGHT, m_graphSurfaceView.getId(), ConstraintSet.RIGHT);
+    constraintSet.constrainWidth(m_timeLabelsLayoutView.getId(), m_graphSurfaceView.getWidth());
     constraintSet.setHorizontalBias(m_timeLabelsLayoutView.getId(), 0.0f);
     constraintSet.setVerticalBias(m_timeLabelsLayoutView.getId(), 0.0f);
 
