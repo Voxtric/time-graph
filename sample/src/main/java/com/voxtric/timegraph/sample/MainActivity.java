@@ -3,6 +3,7 @@ package com.voxtric.timegraph.sample;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.os.Handler;
 
 import com.voxtric.timegraph.TimeGraph;
 
@@ -16,7 +17,7 @@ public class MainActivity extends AppCompatActivity
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
-    TimeGraph timeGraph = findViewById(R.id.time_graph);
+    final TimeGraph timeGraph = findViewById(R.id.time_graph);
 
     timeGraph.setMidValueAxisLabels(new float[] { 4.0f, 8.0f, 12.0f });
 
@@ -29,9 +30,21 @@ public class MainActivity extends AppCompatActivity
     timeGraph.setFreshData(data, 10000, 110000);
 
     timeGraph.setTimeAxisLabels(new TimeGraph.TimeLabel[] {
-          new TimeGraph.TimeLabel(0, "Test A")/*,
+          new TimeGraph.TimeLabel(0, "Test A"),
           new TimeGraph.TimeLabel(30000, "In it"),
-          new TimeGraph.TimeLabel(90000, "Ending")*/
+          new TimeGraph.TimeLabel(100000, "Ending")
         });
+
+    new Handler().postDelayed(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        timeGraph.setTimeAxisLabels(new TimeGraph.TimeLabel[] {
+            new TimeGraph.TimeLabel(30000, "Test A"),
+            new TimeGraph.TimeLabel(100000, "Ending")
+        });
+      }
+    }, 2000);
   }
 }

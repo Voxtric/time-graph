@@ -5,7 +5,7 @@ import android.content.res.TypedArray;
 import android.util.AttributeSet;
 import android.view.SurfaceView;
 import android.view.View;
-import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -32,7 +32,7 @@ public class TimeGraph extends ConstraintLayout
 
   private SurfaceView m_graphSurfaceView = null;
 
-  private LinearLayout m_timeLabelsLayoutView = null;
+  private RelativeLayout m_timeLabelsLayoutView = null;
   private ArrayList<TextView> m_midValueViews = null;
 
   private TextView m_minValueView = null;
@@ -222,12 +222,13 @@ public class TimeGraph extends ConstraintLayout
             float widthMultiplier = 1.0f - (float)((double)(m_endTimestamp - timeLabels[index].timestamp) / (double)(m_endTimestamp - m_startTimestamp));
             float width = getWidth() - (m_maxValueView.getWidth() + dpToPx(getContext(), VALUE_AXIS_MARGIN_DP));
             float offset = widthMultiplier * width;
+            textView.animate().translationX(0.0f).setDuration(0).start();
             textView.animate().translationXBy(offset).setDuration(0).start();
           }
 
           for (int i = m_timeLabelViews.size() - 1; i >= index; i--)
           {
-            removeView(m_timeLabelViews.get(i));
+            m_timeLabelsLayoutView.removeView(m_timeLabelViews.get(i));
             m_timeLabelViews.remove(i);
           }
         }
@@ -262,9 +263,8 @@ public class TimeGraph extends ConstraintLayout
     m_graphSurfaceView.setId(View.generateViewId());
     addView(m_graphSurfaceView);
 
-    m_timeLabelsLayoutView = new LinearLayout(context);
+    m_timeLabelsLayoutView = new RelativeLayout(context);
     m_timeLabelsLayoutView.setId(View.generateViewId());
-    m_timeLabelsLayoutView.setOrientation(LinearLayout.HORIZONTAL);
     addView(m_timeLabelsLayoutView);
 
     m_minValueView = new TextView(context);
