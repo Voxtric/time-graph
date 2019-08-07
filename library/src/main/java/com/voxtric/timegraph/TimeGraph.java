@@ -120,63 +120,70 @@ public class TimeGraph extends ConstraintLayout
     m_endTimestamp = endTimestamp;
   }
 
-  public void setMidValueAxisLabels(float[] midValues)
+  public void setMidValueAxisLabels(final float[] midValues)
   {
     if (midValues != null)
     {
-      if (m_midValueViews == null)
+      m_maxValueView.post(new Runnable()
       {
-        m_midValueViews = new ArrayList<>(midValues.length);
-      }
-
-      int index = 0;
-      for (; index < midValues.length; index++)
-      {
-        if (midValues[index] < m_minValue)
+        @Override
+        public void run()
         {
-          throw new IllegalArgumentException("'midValues' array must not contain values lower than the minimum.");
-        }
-        if (midValues[index] > m_maxValue)
-        {
-          throw new IllegalArgumentException("'midValues' array must not contain values greater than the maximum.");
-        }
-
-        TextView textView;
-        if (index >= m_midValueViews.size())
-        {
-          textView = new TextView(getContext());
-          textView.setId(View.generateViewId());
-          addView(textView);
-          m_midValueViews.add(textView);
-        }
-        else
-        {
-          textView = m_midValueViews.get(index);
-          if (textView == null)
+          if (m_midValueViews == null)
           {
-            textView = new TextView(getContext());
-            textView.setId(View.generateViewId());
-            addView(textView);
-            m_midValueViews.set(index, textView);
+            m_midValueViews = new ArrayList<>(midValues.length);
+          }
+
+          int index = 0;
+          for (; index < midValues.length; index++)
+          {
+            if (midValues[index] < m_minValue)
+            {
+              throw new IllegalArgumentException("'midValues' array must not contain values lower than the minimum.");
+            }
+            if (midValues[index] > m_maxValue)
+            {
+              throw new IllegalArgumentException("'midValues' array must not contain values greater than the maximum.");
+            }
+
+            TextView textView;
+            if (index >= m_midValueViews.size())
+            {
+              textView = createTextView(getContext());
+              textView.animate().translationYBy(m_maxValueView.getHeight() * 0.5f);
+              addView(textView);
+              m_midValueViews.add(textView);
+            }
+            else
+            {
+              textView = m_midValueViews.get(index);
+              if (textView == null)
+              {
+                textView = createTextView(getContext());
+                textView.animate().translationYBy(m_maxValueView.getHeight() * 0.5f);
+                addView(textView);
+                m_midValueViews.set(index, textView);
+              }
+            }
+
+            textView.setText(String.valueOf(midValues[index]));
+            ConstraintSet constraintSet = new ConstraintSet();
+            constraintSet.clone(TimeGraph.this);
+            constraintSet.connect(textView.getId(), ConstraintSet.RIGHT, m_maxValueView.getId(), ConstraintSet.RIGHT);
+            constraintSet.connect(textView.getId(), ConstraintSet.TOP, m_graphSurfaceView.getId(), ConstraintSet.TOP);
+            constraintSet.connect(textView.getId(), ConstraintSet.BOTTOM, m_graphSurfaceView.getId(), ConstraintSet.BOTTOM);
+            constraintSet.setHorizontalBias(textView.getId(), 1.0f);
+            constraintSet.setVerticalBias(textView.getId(), (m_maxValue - midValues[index]) / (m_maxValue - m_minValue));
+            constraintSet.applyTo(TimeGraph.this);
+          }
+
+          for (int i = m_midValueViews.size() - 1; i >= index; i--)
+          {
+            removeView(m_midValueViews.get(i));
+            m_midValueViews.remove(i);
           }
         }
-
-        textView.setText(String.valueOf(midValues[index]));
-        ConstraintSet constraintSet = new ConstraintSet();
-        constraintSet.clone(this);
-        constraintSet.connect(textView.getId(), ConstraintSet.RIGHT, m_maxValueView.getId(), ConstraintSet.RIGHT);
-        constraintSet.connect(textView.getId(), ConstraintSet.TOP, m_graphSurfaceView.getId(), ConstraintSet.TOP);
-        constraintSet.connect(textView.getId(), ConstraintSet.BOTTOM, m_graphSurfaceView.getId(), ConstraintSet.BOTTOM);
-        constraintSet.setHorizontalBias(textView.getId(), 1.0f);
-        constraintSet.setVerticalBias(textView.getId(), (m_maxValue - midValues[index]) / (m_maxValue - m_minValue));
-        constraintSet.applyTo(this);
-      }
-
-      for (int i = m_midValueViews.size() - 1; i >= index; i--)
-      {
-        removeView(m_midValueViews.get(i));
-        m_midValueViews.remove(i);
-      }
+      });
     }
   }
 
@@ -201,8 +208,7 @@ public class TimeGraph extends ConstraintLayout
             TextView textView;
             if (index >= m_timeLabelViews.size())
             {
-              textView = new TextView(getContext());
-              textView.setId(View.generateViewId());
+              textView = createTextView(getContext());
               m_timeLabelsLayoutView.addView(textView);
               m_timeLabelViews.add(textView);
             }
@@ -211,8 +217,7 @@ public class TimeGraph extends ConstraintLayout
               textView = m_timeLabelViews.get(index);
               if (textView == null)
               {
-                textView = new TextView(getContext());
-                textView.setId(View.generateViewId());
+                textView = createTextView(getContext());
                 m_timeLabelsLayoutView.addView(textView);
                 m_timeLabelViews.set(index, textView);
               }
@@ -319,6 +324,23 @@ public class TimeGraph extends ConstraintLayout
       m_minValueView.setVisibility(View.GONE);
       m_maxValueView.setVisibility(View.GONE);
     }
+
+    m_maxValueView.post(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        m_minValueView.animate().translationYBy(m_minValueView.getHeight() * 0.5f).setDuration(0).start();
+        m_maxValueView.animate().translationYBy(m_maxValueView.getHeight() * -0.5f).setDuration(0).start();
+      }
+    });
+  }
+
+  private static TextView createTextView(Context context)
+  {
+    TextView textView = new TextView(context);
+    textView.setId(View.generateViewId());
+    return textView;
   }
 
   private static float dpToPx(Context context, float dp)

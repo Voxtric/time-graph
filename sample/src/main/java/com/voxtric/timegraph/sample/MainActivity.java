@@ -34,17 +34,5 @@ public class MainActivity extends AppCompatActivity
           new TimeGraph.TimeLabel(30000, "In it"),
           new TimeGraph.TimeLabel(100000, "Ending")
         });
-
-    new Handler().postDelayed(new Runnable()
-    {
-      @Override
-      public void run()
-      {
-        timeGraph.setTimeAxisLabels(new TimeGraph.TimeLabel[] {
-            new TimeGraph.TimeLabel(30000, "Test A"),
-            new TimeGraph.TimeLabel(100000, "Ending")
-        });
-      }
-    }, 2000);
   }
 }
