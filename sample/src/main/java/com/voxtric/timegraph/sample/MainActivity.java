@@ -10,7 +10,8 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements TimeGraph.DataAccessor
 {
-  TimeGraph.Data[] m_testData = new TimeGraph.Data[100];
+  TimeGraph.Data[] m_testData = new TimeGraph.Data[10];
+  TimeGraph m_timeGraph = null;
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
@@ -26,16 +27,42 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
-    final TimeGraph timeGraph = findViewById(R.id.time_graph);
+    m_timeGraph = findViewById(R.id.time_graph);
 
-    timeGraph.setMidValueAxisLabels(new float[] { 4.0f, 8.0f, 12.0f });
-    timeGraph.setVisibleDataPeriod(0, 432000000, this);
+    m_timeGraph.setMidValueAxisLabels(new float[] { 4.0f, 8.0f, 12.0f });
+    m_timeGraph.setVisibleDataPeriod(0, 432000000, this);
+  }
+
+  private TimeGraph.Data[] getData(long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp, int recursionDepth)
+  {
+    if (recursionDepth > 1)
+    {
+      return m_testData;
+    }
+    else if (visibleStartTimestamp < m_testData[0].timestamp)
+    {
+      long difference = m_testData[0].timestamp - visibleStartTimestamp;
+      return getData(startTimestamp + difference, endTimestamp + difference,
+                     visibleStartTimestamp + difference, visibleEndTimestamp + difference,
+                     recursionDepth + 1);
+    }
+    else if (visibleEndTimestamp > m_testData[m_testData.length - 1].timestamp)
+    {
+      long difference = visibleEndTimestamp - m_testData[m_testData.length - 1].timestamp;
+      return getData(startTimestamp - difference, endTimestamp - difference,
+                     visibleStartTimestamp - difference, visibleEndTimestamp - difference,
+                     recursionDepth + 1);
+    }
+    else
+    {
+      return m_testData;
+    }
   }
 
   @Override
-  public TimeGraph.Data[] getData(long startTimestamp, long endTimestamp)
+  public TimeGraph.Data[] getData(long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp)
   {
-    return m_testData;
+    return getData(startTimestamp, endTimestamp, visibleStartTimestamp, visibleEndTimestamp, 0);
   }
 
   @Override

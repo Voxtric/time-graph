@@ -297,26 +297,29 @@ public class TimeGraph extends ConstraintLayout
       {
         long timeDifference = m_endTimestamp - m_startTimestamp;
         float valueDifference = m_maxValue - m_minValue;
-
-        Data[] data = m_dataAccessor.getData(m_startTimestamp - timeDifference, m_endTimestamp + timeDifference);
-        setTimeAxisLabels(m_dataAccessor.getLabelsForData(data));
-
-        float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
-        int coordsIndex = 0;
-        for (Data datum : data)
-        {
-          float xCoord = 1.0f - (float)((m_endTimestamp - datum.timestamp) / (double)timeDifference);
-          float yCoord = (m_maxValue - datum.value) / valueDifference;
-          coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
-          coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
-          coordsIndex += 2;
-        }
         if (m_dataLine != null)
         {
           m_graphSurfaceView.removeRenderable(m_dataLine);
         }
-        m_xOffset = 0.0f;
-        m_dataLine = m_graphSurfaceView.addLine(coords);
+
+        Data[] data = m_dataAccessor.getData(m_startTimestamp - timeDifference, m_endTimestamp + timeDifference, m_startTimestamp, m_endTimestamp);
+        if (data != null)
+        {
+          setTimeAxisLabels(m_dataAccessor.getLabelsForData(data));
+
+          float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
+          int coordsIndex = 0;
+          for (Data datum : data)
+          {
+            float xCoord = 1.0f - (float)((m_endTimestamp - datum.timestamp) / (double)timeDifference);
+            float yCoord = (m_maxValue - datum.value) / valueDifference;
+            coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
+            coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
+            coordsIndex += 2;
+          }
+          m_xOffset = 0.0f;
+          m_dataLine = m_graphSurfaceView.addLine(coords);
+        }
 
         m_refreshing = false;
         if (m_showRefreshProgress)
@@ -470,8 +473,8 @@ public class TimeGraph extends ConstraintLayout
 
   public static class Data
   {
-    long timestamp;
-    float value;
+    public long timestamp;
+    public float value;
 
     public Data(long timestamp, float value)
     {
@@ -482,7 +485,7 @@ public class TimeGraph extends ConstraintLayout
 
   public interface DataAccessor
   {
-    Data[] getData(long startTimestamp, long endTimestamp);
+    Data[] getData(long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp);
     TimeLabel[] getLabelsForData(Data[] data);
   }
 }
