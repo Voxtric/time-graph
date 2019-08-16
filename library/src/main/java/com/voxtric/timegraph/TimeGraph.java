@@ -14,6 +14,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 
 import com.voxtric.timegraph.opengl.GraphSurface;
+import com.voxtric.timegraph.opengl.Line;
 import com.voxtric.timegraph.opengl.Renderable;
 
 import java.text.DateFormat;
@@ -45,6 +46,7 @@ public class TimeGraph extends ConstraintLayout
   private ProgressBar m_refreshProgressView = null;
 
   private GraphSurface m_graphSurfaceView = null;
+  private Line m_dataLine = null;
 
   private RelativeLayout m_timeLabelsLayoutView = null;
   private ArrayList<TextView> m_midValueViews = null;
@@ -271,7 +273,7 @@ public class TimeGraph extends ConstraintLayout
     refresh();
   }
 
-  private void refresh()
+  public void refresh()
   {
     m_refreshing = true;
     if (m_showRefreshProgress)
@@ -307,7 +309,11 @@ public class TimeGraph extends ConstraintLayout
           coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
           coordsIndex += 2;
         }
-        m_graphSurfaceView.addLine(coords);
+        if (m_dataLine != null)
+        {
+          m_graphSurfaceView.removeRenderable(m_dataLine);
+        }
+        m_dataLine = m_graphSurfaceView.addLine(coords);
 
         m_refreshing = false;
         if (m_showRefreshProgress)
@@ -323,6 +329,18 @@ public class TimeGraph extends ConstraintLayout
         }
       }
     });
+  }
+
+  public void scrollAlong(float pixel, float normalised)
+  {
+    for (TextView view : m_timeLabelViews)
+    {
+      view.animate().translationXBy(pixel).setDuration(0).start();
+    }
+
+    long timeDifference = m_endTimestamp - m_startTimestamp;
+    m_startTimestamp -= timeDifference * normalised;
+    m_endTimestamp -= timeDifference * normalised;
   }
 
   private void applyAttributes(Context context, AttributeSet attrs)
@@ -351,6 +369,7 @@ public class TimeGraph extends ConstraintLayout
   {
     m_graphSurfaceView = new GraphSurface(context);
     m_graphSurfaceView.setId(R.id.graph_surface);
+    m_graphSurfaceView.initialise(this);
     addView(m_graphSurfaceView);
 
     m_timeLabelsLayoutView = new RelativeLayout(context);
@@ -409,7 +428,7 @@ public class TimeGraph extends ConstraintLayout
     long timestamp;
     String label;
 
-    public TimeLabel(long timestamp, String label)
+    TimeLabel(long timestamp, String label)
     {
       this.timestamp = timestamp;
       this.label = label;

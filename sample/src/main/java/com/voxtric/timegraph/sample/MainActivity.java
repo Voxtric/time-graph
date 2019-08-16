@@ -10,9 +10,19 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements TimeGraph.DataAccessor
 {
+  TimeGraph.Data[] m_testData = new TimeGraph.Data[100];
+
   @Override
   protected void onCreate(Bundle savedInstanceState)
   {
+    Random random = new Random();
+    for (int i = 0; i < m_testData.length; i++)
+    {
+      m_testData[i] = new TimeGraph.Data((i * 8640000) + (Math.abs(random.nextInt()) % 8600000), random.nextFloat() * 16.0f);
+    }
+
+
+
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
@@ -25,22 +35,15 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
   @Override
   public TimeGraph.Data[] getData(long startTimestamp, long endTimestamp)
   {
-    Random random = new Random();
-    TimeGraph.Data[] data = new TimeGraph.Data[100];
-    for (int i = 0; i < data.length; i++)
+    /*try
     {
-      data[i] = new TimeGraph.Data((i * 8640000) + (Math.abs(random.nextInt()) % 8600000), random.nextFloat() * 16.0f);
-    }
-
-    try
-    {
-      Thread.sleep(2000);
+      Thread.sleep(500);
     }
     catch (InterruptedException e)
     {
       e.printStackTrace();
-    }
-    return data;
+    }*/
+    return m_testData;
   }
 
   @Override
