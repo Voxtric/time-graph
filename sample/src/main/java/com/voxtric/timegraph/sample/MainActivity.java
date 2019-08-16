@@ -35,14 +35,6 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
   @Override
   public TimeGraph.Data[] getData(long startTimestamp, long endTimestamp)
   {
-    /*try
-    {
-      Thread.sleep(500);
-    }
-    catch (InterruptedException e)
-    {
-      e.printStackTrace();
-    }*/
     return m_testData;
   }
 

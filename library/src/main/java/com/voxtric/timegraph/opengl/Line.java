@@ -19,6 +19,10 @@ public class Line extends Renderable
     GLES20.glVertexAttribPointer(vertexPositionHandle, COORDS_PER_VERTEX,
                                  GLES20.GL_FLOAT, false,
                                  COORDS_PER_VERTEX * (Float.SIZE / Byte.SIZE) , getVertexBuffer());
+
+    int xOffsetHandle = GLES20.glGetUniformLocation(shaderHandle, "xOffset");
+    GLES20.glUniform1f(xOffsetHandle, m_xOffset);
+
     GLES20.glDrawArrays(GLES20.GL_LINE_STRIP, 0, getVertexCount());
   }
 }

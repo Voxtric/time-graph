@@ -11,19 +11,21 @@ public abstract class Renderable
   public static final int COORDS_PER_VERTEX = 2;
 
   private static final String VERTEX_SHADER_CODE =
+      "uniform float xOffset;" +
       "attribute vec4 vertexPosition;" +
-          "void main() {" +
-          "  gl_Position = vertexPosition;" +
-          "}";
+      "void main() {" +
+      "  gl_Position = vec4(vertexPosition.x + xOffset, vertexPosition.yzw);" +
+      "}";
   private static final String FRAGMENT_SHADER_CODE =
       "precision mediump float;" +
-          "void main() {" +
-          "  gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);" +
-          "}";
+      "void main() {" +
+      "  gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);" +
+      "}";
   private static int s_shaderHandle = -1;
 
   private FloatBuffer m_vertexBuffer;
   private int m_vertexCount;
+  protected float m_xOffset = 0.0f;
 
   Renderable(float[] coords)
   {
@@ -71,5 +73,10 @@ public abstract class Renderable
     GLES20.glShaderSource(shaderHandle, shaderCode);
     GLES20.glCompileShader(shaderHandle);
     return shaderHandle;
+  }
+
+  public void setXOffset(float xOffset)
+  {
+    m_xOffset = xOffset;
   }
 }

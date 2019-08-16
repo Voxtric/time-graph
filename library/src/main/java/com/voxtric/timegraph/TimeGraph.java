@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -46,6 +47,7 @@ public class TimeGraph extends ConstraintLayout
   private ProgressBar m_refreshProgressView = null;
 
   private GraphSurface m_graphSurfaceView = null;
+  private float m_xOffset = 0.0f;
   private Line m_dataLine = null;
 
   private RelativeLayout m_timeLabelsLayoutView = null;
@@ -313,6 +315,7 @@ public class TimeGraph extends ConstraintLayout
         {
           m_graphSurfaceView.removeRenderable(m_dataLine);
         }
+        m_xOffset = 0.0f;
         m_dataLine = m_graphSurfaceView.addLine(coords);
 
         m_refreshing = false;
@@ -341,6 +344,10 @@ public class TimeGraph extends ConstraintLayout
     long timeDifference = m_endTimestamp - m_startTimestamp;
     m_startTimestamp -= timeDifference * normalised;
     m_endTimestamp -= timeDifference * normalised;
+
+    m_xOffset += normalised * 2.0f;
+    m_dataLine.setXOffset(m_xOffset);
+    m_graphSurfaceView.requestRender();
   }
 
   private void applyAttributes(Context context, AttributeSet attrs)
