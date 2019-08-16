@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     final TimeGraph timeGraph = findViewById(R.id.time_graph);
 
     timeGraph.setMidValueAxisLabels(new float[] { 4.0f, 8.0f, 12.0f });
-    timeGraph.setVisibleDataPeriod(200, 432000000, this);
+    timeGraph.setVisibleDataPeriod(0, 432000000, this);
   }
 
   @Override
@@ -30,6 +30,15 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     for (int i = 0; i < data.length; i++)
     {
       data[i] = new TimeGraph.Data((i * 8640000) + (Math.abs(random.nextInt()) % 8600000), random.nextFloat() * 16.0f);
+    }
+
+    try
+    {
+      Thread.sleep(2000);
+    }
+    catch (InterruptedException e)
+    {
+      e.printStackTrace();
     }
     return data;
   }
