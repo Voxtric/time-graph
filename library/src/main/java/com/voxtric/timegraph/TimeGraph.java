@@ -2,18 +2,25 @@ package com.voxtric.timegraph;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 
 import com.voxtric.timegraph.opengl.GraphSurface;
 import com.voxtric.timegraph.opengl.Renderable;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 
 public class TimeGraph extends ConstraintLayout
 {
@@ -31,6 +38,7 @@ public class TimeGraph extends ConstraintLayout
 
   private long m_startTimestamp = 0;
   private long m_endTimestamp = 1;
+  private DataAccessor m_dataAccessor = null;
 
   private GraphSurface m_graphSurfaceView = null;
 
@@ -116,24 +124,13 @@ public class TimeGraph extends ConstraintLayout
     return m_maxValue;
   }
 
-  public void setFreshData(Data[] data, long startTimestamp, long endTimestamp)
+  public void setVisibleDataPeriod(long startTimestamp, long endTimestamp, @NonNull final DataAccessor dataAccessor)
   {
     m_startTimestamp = startTimestamp;
     m_endTimestamp = endTimestamp;
-    double timeDifference = (double)(m_endTimestamp - m_startTimestamp);
-    float valueDifference = (m_maxValue - m_minValue);
+    m_dataAccessor = dataAccessor;
 
-    float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
-    int coordsIndex = 0;
-    for (Data datum : data)
-    {
-      float xCoord = 1.0f - (float)((m_endTimestamp - datum.timestamp) / timeDifference);
-      float yCoord = (m_maxValue - datum.value) / valueDifference;
-      coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
-      coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
-      coordsIndex += 2;
-    }
-    m_graphSurfaceView.addLine(coords);
+    update();
   }
 
   public void setMidValueAxisLabels(final float[] midValues)
@@ -269,6 +266,34 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
+  private void update()
+  {
+    AsyncTask.execute(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        long timeDifference = m_endTimestamp - m_startTimestamp;
+        float valueDifference = m_maxValue - m_minValue;
+
+        Data[] data = m_dataAccessor.getData(m_startTimestamp - timeDifference, m_endTimestamp + timeDifference);
+        setTimeAxisLabels(m_dataAccessor.getLabelsForData(data));
+
+        float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
+        int coordsIndex = 0;
+        for (Data datum : data)
+        {
+          float xCoord = 1.0f - (float)((m_endTimestamp - datum.timestamp) / (double)timeDifference);
+          float yCoord = (m_maxValue - datum.value) / valueDifference;
+          coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
+          coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
+          coordsIndex += 2;
+        }
+        m_graphSurfaceView.addLine(coords);
+      }
+    });
+  }
+
   private void initialise(Context context)
   {
     m_graphSurfaceView = new GraphSurface(context);
@@ -323,25 +348,57 @@ public class TimeGraph extends ConstraintLayout
 
   public static class TimeLabel
   {
-    public long timestamp;
-    public String label;
+    long timestamp;
+    String label;
 
     public TimeLabel(long timestamp, String label)
     {
       this.timestamp = timestamp;
       this.label = label;
     }
+
+    public static TimeLabel[] labelDays(Data[] data)
+    {
+      ArrayList<TimeLabel> timeLabels = new ArrayList<>();
+      long lastDay = Long.MIN_VALUE;
+      Calendar calendar = Calendar.getInstance();
+
+      for (Data datum : data)
+      {
+        calendar.setTimeInMillis(datum.timestamp);
+        calendar.set(Calendar.HOUR_OF_DAY, calendar.getMinimum(Calendar.HOUR_OF_DAY));
+        calendar.set(Calendar.MINUTE, calendar.getMinimum(Calendar.MINUTE));
+        calendar.set(Calendar.SECOND, calendar.getMinimum(Calendar.SECOND));
+        calendar.set(Calendar.MILLISECOND, calendar.getMinimum(Calendar.MILLISECOND));
+
+        if (calendar.getTimeInMillis() > lastDay)
+        {
+          lastDay = calendar.getTimeInMillis();
+          Date date = calendar.getTime();
+          DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.SHORT);
+          timeLabels.add(new TimeLabel(lastDay, dateFormat.format(date)));
+        }
+      }
+
+      return timeLabels.toArray(new TimeLabel[0]);
+    }
   }
 
   public static class Data
   {
-    public long timestamp;
-    public float value;
+    long timestamp;
+    float value;
 
     public Data(long timestamp, float value)
     {
       this.timestamp = timestamp;
       this.value = value;
     }
+  }
+
+  public interface DataAccessor
+  {
+    Data[] getData(long startTimestamp, long endTimestamp);
+    TimeLabel[] getLabelsForData(Data[] data);
   }
 }
