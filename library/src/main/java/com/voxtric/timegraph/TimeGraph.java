@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -29,6 +30,8 @@ public class TimeGraph extends ConstraintLayout
   private static final boolean DEFAULT_SHOW_TIME_AXIS = true;
   private static final boolean DEFAULT_SHOW_VALUE_AXIS = true;
   private static final boolean DEFAULT_SHOW_REFRESH_PROGRESS = true;
+  private static final boolean DEFAULT_SHOW_NO_DATA_TEXT = true;
+  private static final String DEFAULT_NO_DATA_TEXT = "No Data To Display";
   private static final float DEFAULT_OVER_SCROLL = 0.0f;
 
   private static final float VALUE_AXIS_MARGIN_DP = 4.0f;
@@ -38,6 +41,8 @@ public class TimeGraph extends ConstraintLayout
   private boolean m_showTimeAxis = DEFAULT_SHOW_TIME_AXIS;
   private boolean m_showValueAxis = DEFAULT_SHOW_VALUE_AXIS;
   private boolean m_showRefreshProgress = DEFAULT_SHOW_REFRESH_PROGRESS;
+  private boolean m_showNoDataText = DEFAULT_SHOW_NO_DATA_TEXT;
+  private CharSequence m_noDataText = DEFAULT_NO_DATA_TEXT;
   private float m_overScroll = DEFAULT_OVER_SCROLL;
 
   private long m_startTimestamp = 0;
@@ -46,6 +51,7 @@ public class TimeGraph extends ConstraintLayout
 
   private boolean m_refreshing = false;
   private ProgressBar m_refreshProgressView = null;
+  private TextView m_noDataView = null;
 
   private GraphSurface m_graphSurfaceView = null;
   private float m_xOffset = 0.0f;
@@ -149,7 +155,7 @@ public class TimeGraph extends ConstraintLayout
   public void setShowRefreshProgress(boolean value)
   {
     m_showRefreshProgress = value;
-    m_refreshProgressView.setVisibility(value && m_refreshing ? View.VISIBLE : View.GONE);
+    m_refreshProgressView.setVisibility(value && m_refreshing ? View.VISIBLE : View.INVISIBLE);
   }
 
   public boolean getShowRefreshProgress()
@@ -171,7 +177,7 @@ public class TimeGraph extends ConstraintLayout
   {
     if (timeLabels != null)
     {
-      m_timeLabelsLayoutView.post(new Runnable()
+      post(new Runnable()
       {
         @Override
         public void run()
@@ -288,27 +294,49 @@ public class TimeGraph extends ConstraintLayout
     refresh();
   }
 
+  public void clearData()
+  {
+    m_startTimestamp = 0L;
+    m_endTimestamp = 0L;
+    m_dataAccessor = null;
+
+    refresh();
+  }
+
   public void refresh()
   {
-    m_refreshing = true;
-    if (m_showRefreshProgress)
+    final long timeDifference = m_endTimestamp - m_startTimestamp;
+    if (timeDifference > 0L)
     {
-      m_refreshProgressView.post(new Runnable()
+      createNewDataLine(timeDifference);
+    }
+    else
+    {
+      clearDataLine();
+    }
+  }
+
+  private void createNewDataLine(final long timeDifference)
+  {
+    m_refreshing = true;
+    post(new Runnable()
+    {
+      @Override
+      public void run()
       {
-        @Override
-        public void run()
+        if (m_showRefreshProgress)
         {
           m_refreshProgressView.setVisibility(View.VISIBLE);
         }
-      });
-    }
+        m_noDataView.setVisibility(View.INVISIBLE);
+      }
+    });
 
     AsyncTask.execute(new Runnable()
     {
       @Override
       public void run()
       {
-        long timeDifference = m_endTimestamp - m_startTimestamp;
         float floatTimeDifference = (float)timeDifference;
         float valueDifference = m_maxValue - m_minValue;
         if (m_dataLine != null)
@@ -316,41 +344,67 @@ public class TimeGraph extends ConstraintLayout
           m_graphSurfaceView.removeRenderable(m_dataLine);
         }
 
-        Data[] data = m_dataAccessor.getData(m_startTimestamp - timeDifference, m_endTimestamp + timeDifference, m_startTimestamp, m_endTimestamp);
-        if (data != null)
+        Data[] data = null;
+        if (m_dataAccessor != null)
         {
-          setTimeAxisLabels(m_dataAccessor.getLabelsForData(data));
-
-          float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
-          int coordsIndex = 0;
-          for (Data datum : data)
+          data = m_dataAccessor.getData(m_startTimestamp - timeDifference,
+                                               m_endTimestamp + timeDifference,
+                                               m_startTimestamp,
+                                               m_endTimestamp);
+          if (data != null)
           {
-            float xCoord = 1.0f - (m_endTimestamp - datum.timestamp) / floatTimeDifference;
-            float yCoord = (m_maxValue - datum.value) / valueDifference;
-            coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
-            coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
-            coordsIndex += 2;
+            setTimeAxisLabels(m_dataAccessor.getLabelsForData(data));
+
+            float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
+            int coordsIndex = 0;
+            for (Data datum : data)
+            {
+              float xCoord = 1.0f - (m_endTimestamp - datum.timestamp) / floatTimeDifference;
+              float yCoord = (m_maxValue - datum.value) / valueDifference;
+              coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
+              coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
+              coordsIndex += 2;
+            }
+
+            m_xOffset = 0.0f;
+            m_minXOffset = ((data[0].timestamp - m_startTimestamp - timeDifference) / -floatTimeDifference) - 1.0f + m_overScroll;
+            m_maxXOffset = ((m_endTimestamp + timeDifference - data[data.length - 1].timestamp) / floatTimeDifference) - 1.0f - m_overScroll;
+
+            m_dataLine = m_graphSurfaceView.addLine(coords);
           }
-
-          m_xOffset = 0.0f;
-          m_minXOffset = ((data[0].timestamp - m_startTimestamp - timeDifference) / -floatTimeDifference) - 1.0f + m_overScroll;
-          m_maxXOffset = ((m_endTimestamp + timeDifference - data[data.length - 1].timestamp) / floatTimeDifference) - 1.0f - m_overScroll;
-
-          m_dataLine = m_graphSurfaceView.addLine(coords);
         }
 
         m_refreshing = false;
         if (m_showRefreshProgress)
         {
-          m_refreshProgressView.post(new Runnable()
+          final boolean dataApplied = data != null && data.length > 0;
+          post(new Runnable()
           {
             @Override
             public void run()
             {
-              m_refreshProgressView.setVisibility(View.GONE);
+              m_refreshProgressView.setVisibility(View.INVISIBLE);
+              m_noDataView.setVisibility(!dataApplied && m_showNoDataText ? View.VISIBLE : View.INVISIBLE);
             }
           });
         }
+      }
+    });
+  }
+
+  private void clearDataLine()
+  {
+    if (m_dataLine != null)
+    {
+      m_graphSurfaceView.removeRenderable(m_dataLine);
+    }
+    setTimeAxisLabels(new TimeLabel[0]);
+    post(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        m_noDataView.setVisibility(m_showNoDataText ? View.VISIBLE : View.INVISIBLE);
       }
     });
   }
@@ -391,6 +445,12 @@ public class TimeGraph extends ConstraintLayout
       m_showTimeAxis = attributes.getBoolean(R.styleable.TimeGraph_showTimeAxis, DEFAULT_SHOW_TIME_AXIS);
       m_showValueAxis = attributes.getBoolean(R.styleable.TimeGraph_showValueAxis, DEFAULT_SHOW_VALUE_AXIS);
       m_showRefreshProgress = attributes.getBoolean(R.styleable.TimeGraph_showRefreshProgress, DEFAULT_SHOW_REFRESH_PROGRESS);
+      m_showNoDataText = attributes.getBoolean(R.styleable.TimeGraph_showNoDataText, DEFAULT_SHOW_NO_DATA_TEXT);
+      m_noDataText = attributes.getText(R.styleable.TimeGraph_noDataText);
+      if (m_noDataText == null)
+      {
+        m_noDataText = DEFAULT_NO_DATA_TEXT;
+      }
       m_overScroll = attributes.getFraction(R.styleable.TimeGraph_overScroll, 1, 1, DEFAULT_OVER_SCROLL);
 
       if (m_minValue > m_maxValue)
@@ -427,8 +487,13 @@ public class TimeGraph extends ConstraintLayout
 
     m_refreshProgressView = new ProgressBar(context);
     m_refreshProgressView.setId(R.id.refresh_progress);
-    m_refreshProgressView.setVisibility(View.GONE);
     addView(m_refreshProgressView);
+
+    m_noDataView = new TextView(context);
+    m_noDataView.setId(R.id.no_data);
+    m_noDataView.setGravity(Gravity.CENTER);
+    m_noDataView.setText(m_noDataText);
+    addView(m_noDataView);
 
     ConstraintSet constraintSet = new ConstraintSet();
     constraintSet.clone(context, R.layout.graph_view);
@@ -442,6 +507,11 @@ public class TimeGraph extends ConstraintLayout
     {
       m_minValueView.setVisibility(View.GONE);
       m_maxValueView.setVisibility(View.GONE);
+    }
+    m_refreshProgressView.setVisibility(View.INVISIBLE);
+    if (!m_showNoDataText)
+    {
+      m_noDataView.setVisibility(View.INVISIBLE);
     }
   }
 

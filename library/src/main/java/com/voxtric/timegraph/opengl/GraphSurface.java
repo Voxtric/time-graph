@@ -29,6 +29,7 @@ public class GraphSurface extends GLSurfaceView
     m_timeGraph = timeGraph;
 
     setEGLContextClientVersion(2);
+
     m_renderer = new GraphRenderer();
     setRenderer(m_renderer);
     setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);

@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements TimeGraph.DataAccessor
 {
-  TimeGraph.Data[] m_testData = new TimeGraph.Data[10];
+  TimeGraph.Data[] m_testData = new TimeGraph.Data[1000];
   TimeGraph m_timeGraph = null;
 
   @Override
@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     Random random = new Random();
     for (int i = 0; i < m_testData.length; i++)
     {
-      m_testData[i] = new TimeGraph.Data((i * 8640000) + (Math.abs(random.nextInt()) % 8600000), random.nextFloat() * 16.0f);
+      m_testData[i] = new TimeGraph.Data((i * 8640000L) + (Math.abs(random.nextLong()) % 8600000L), random.nextFloat() * 16.0f);
     }
 
 
@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     m_timeGraph = findViewById(R.id.time_graph);
 
     m_timeGraph.setMidValueAxisLabels(new float[] { 4.0f, 8.0f, 12.0f });
-    m_timeGraph.setVisibleDataPeriod(0, 432000000, this);
+    m_timeGraph.setVisibleDataPeriod(0, 432000000, MainActivity.this);
   }
 
   @Override
