@@ -105,16 +105,46 @@ public class GraphSurface extends GLSurfaceView
     return handled;
   }
 
-  public Line addLine(float[] coords)
+  public LineStrip addLineStrip(float[] coords)
   {
-    Line line = new Line(coords);
-    m_renderer.addRenderable(line);
-    requestRender();
+    final LineStrip lineStrip = new LineStrip(coords);
+    queueEvent(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        m_renderer.addRenderable(lineStrip);
+        requestRender();
+      }
+    });
+    return lineStrip;
+  }
+
+  public Line addLine(float startXPos, float startYPos, float endXPos, float endYPos)
+  {
+    final Line line = new Line(new float[] { startXPos, startYPos, endXPos, endYPos });
+    queueEvent(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        m_renderer.addRenderable(line);
+        requestRender();
+      }
+    });
     return line;
   }
 
-  public void removeRenderable(Renderable renderable)
+  public void removeRenderable(final Renderable renderable)
   {
-    m_renderer.removeRenderable(renderable);
+    queueEvent(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        m_renderer.removeRenderable(renderable);
+        requestRender();
+      }
+    });
   }
 }

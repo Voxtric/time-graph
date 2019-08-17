@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -17,6 +16,7 @@ import androidx.constraintlayout.widget.ConstraintSet;
 
 import com.voxtric.timegraph.opengl.GraphSurface;
 import com.voxtric.timegraph.opengl.Line;
+import com.voxtric.timegraph.opengl.LineStrip;
 import com.voxtric.timegraph.opengl.Renderable;
 
 import java.text.DateFormat;
@@ -59,7 +59,7 @@ public class TimeGraph extends ConstraintLayout
   private float m_minXOffset = 0.0f;
   private float m_maxXOffset = 0.0f;
   private float m_xScale = 1.0f;
-  private Line m_dataLine = null;
+  private LineStrip m_dataLine = null;
 
   private RelativeLayout m_timeLabelsLayoutView = null;
   private ArrayList<TextView> m_midValueViews = null;
@@ -198,6 +198,8 @@ public class TimeGraph extends ConstraintLayout
             if (index >= m_timeAxisLabels.size())
             {
               timeAxisLabel = new TimeAxisLabel(createTextView(getContext()));
+              timeAxisLabel.view.setBackgroundResource(R.drawable.label_border);
+              timeAxisLabel.view.setPadding((int)dpToPx(getContext(), 3), 0, 0, 0);
               m_timeLabelsLayoutView.addView(timeAxisLabel.view);
               m_timeAxisLabels.add(timeAxisLabel);
             }
@@ -207,8 +209,9 @@ public class TimeGraph extends ConstraintLayout
               if (timeAxisLabel == null)
               {
                 timeAxisLabel = new TimeAxisLabel(createTextView(getContext()));
+                timeAxisLabel.view.setBackgroundResource(R.drawable.label_border);
+                timeAxisLabel.view.setPadding((int)dpToPx(getContext(), 3), 0, 0, 0);
                 m_timeLabelsLayoutView.addView(timeAxisLabel.view);
-                //m_timeAxisLabels.set(index, textViewPair);
               }
             }
 
@@ -218,11 +221,23 @@ public class TimeGraph extends ConstraintLayout
             timeAxisLabel.view.animate().translationX(0.0f).setDuration(0).start();
             timeAxisLabel.view.animate().translationXBy(offset).setDuration(0).start();
             timeAxisLabel.offset = offset - (m_graphSurfaceView.getWidth() * 0.5f);
+
+            if (timeAxisLabel.marker != null)
+            {
+              m_graphSurfaceView.removeRenderable(timeAxisLabel.marker);
+            }
+            float markerX = (((offset / m_graphSurfaceView.getWidth()) * 2.0f) - 1.0f) + 0.003f;
+            timeAxisLabel.marker = m_graphSurfaceView.addLine(markerX, -1.0f, markerX, -0.9f);
           }
 
           for (int i = m_timeAxisLabels.size() - 1; i >= index; i--)
           {
-            m_timeLabelsLayoutView.removeView(m_timeAxisLabels.get(i).view);
+            TimeAxisLabel label = m_timeAxisLabels.get(i);
+            m_timeLabelsLayoutView.removeView(label.view);
+            if (label.marker != null)
+            {
+              m_graphSurfaceView.removeRenderable(label.marker);
+            }
             m_timeAxisLabels.remove(i);
           }
         }
@@ -374,7 +389,7 @@ public class TimeGraph extends ConstraintLayout
             m_maxXOffset = ((m_endTimestamp + timeDifference - data[data.length - 1].timestamp) / floatTimeDifference) - 1.0f - m_overScroll;
             m_xScale = 1.0f;
 
-            m_dataLine = m_graphSurfaceView.addLine(coords);
+            m_dataLine = m_graphSurfaceView.addLineStrip(coords);
           }
         }
 
@@ -439,8 +454,15 @@ public class TimeGraph extends ConstraintLayout
     if (m_dataLine != null)
     {
       m_dataLine.setXOffset(m_xOffset * 2.0f);
-      m_graphSurfaceView.requestRender();
     }
+    for (TimeAxisLabel label : m_timeAxisLabels)
+    {
+      if (label.marker != null)
+      {
+        label.marker.setXOffset(m_xOffset * 2.0f);
+      }
+    }
+    m_graphSurfaceView.requestRender();
   }
 
   public void scaleData(float normalisedScaleDelta)
@@ -461,8 +483,15 @@ public class TimeGraph extends ConstraintLayout
     if (m_dataLine != null)
     {
       m_dataLine.setXScale(m_xScale);
-      m_graphSurfaceView.requestRender();
     }
+    for (TimeAxisLabel label : m_timeAxisLabels)
+    {
+      if (label.marker != null)
+      {
+        label.marker.setXScale(m_xScale);
+      }
+    }
+    m_graphSurfaceView.requestRender();
   }
 
   private void applyAttributes(Context context, AttributeSet attrs)
@@ -604,17 +633,20 @@ public class TimeGraph extends ConstraintLayout
   {
     float offset;
     TextView view;
+    Line marker;
 
     TimeAxisLabel(TextView view)
     {
       this.offset = 0.0f;
       this.view = view;
+      this.marker = null;
     }
 
-    TimeAxisLabel(float offset, TextView view)
+    TimeAxisLabel(float offset, TextView view, Line marker)
     {
       this.offset = offset;
       this.view = view;
+      this.marker = marker;
     }
   }
 

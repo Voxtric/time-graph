@@ -2,9 +2,9 @@ package com.voxtric.timegraph.opengl;
 
 import android.opengl.GLES20;
 
-public class Line extends TransformableRenderable
+public class LineStrip extends TransformableRenderable
 {
-  Line(float[] coords)
+  LineStrip(float[] coords)
   {
     super(coords);
   }
@@ -26,6 +26,6 @@ public class Line extends TransformableRenderable
     int xScaleHandle = GLES20.glGetUniformLocation(shaderHandle, "xScale");
     GLES20.glUniform1f(xScaleHandle, m_xScale);
 
-    GLES20.glDrawArrays(GLES20.GL_LINES, 0, getVertexCount());
+    GLES20.glDrawArrays(GLES20.GL_LINE_STRIP, 0, getVertexCount());
   }
 }
