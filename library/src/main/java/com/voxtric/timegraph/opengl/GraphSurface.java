@@ -50,6 +50,7 @@ public class GraphSurface extends GLSurfaceView
     {
     case MotionEvent.ACTION_DOWN:
       m_previousPixelX = motionEvent.getX();
+      m_ignoreScroll = false;
       handled = true;
       break;
 
@@ -68,7 +69,6 @@ public class GraphSurface extends GLSurfaceView
 
     case MotionEvent.ACTION_POINTER_UP:
       m_scaling = false;
-      m_timeGraph.refresh();
       handled = true;
       break;
 
@@ -83,7 +83,6 @@ public class GraphSurface extends GLSurfaceView
           m_timeGraph.scrollData(normalisedXDelta);
           m_previousPixelX = pixelX;
         }
-        m_ignoreScroll = false;
       }
       else if (motionEvent.getPointerCount() >= 2)
       {
@@ -91,7 +90,11 @@ public class GraphSurface extends GLSurfaceView
         float pixelYDifference = motionEvent.getY(0) - motionEvent.getY(1);
         float pixelDistance = (float)Math.sqrt((pixelXDifference * pixelXDifference) + (pixelYDifference * pixelYDifference));
         float normalisedDistanceDelta = (pixelDistance - m_previousPixelDistance) / getWidth();
-        m_timeGraph.scaleData(normalisedDistanceDelta);
+
+        float pixelXCentre = motionEvent.getX(0) - (pixelXDifference * 0.5f);
+        float normalisedXCentre = pixelXCentre / getWidth();
+
+        m_timeGraph.scaleData(normalisedDistanceDelta, normalisedXCentre);
         m_ignoreScroll = true;
         m_previousPixelDistance = pixelDistance;
       }

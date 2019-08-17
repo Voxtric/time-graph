@@ -7,9 +7,11 @@ abstract class TransformableRenderable extends Renderable
   private static final String VERTEX_SHADER_CODE =
       "uniform float xOffset;" +
       "uniform float xScale;" +
+      "uniform float xScalePosition;" +
       "attribute vec4 vertexPosition;" +
       "void main() {" +
-      "  gl_Position = vec4((vertexPosition.x * xScale) + xOffset, vertexPosition.yzw);" +
+      "  float scaledDifference = (xScalePosition - vertexPosition.x) * (xScale - 1.0);" +
+      "  gl_Position = vec4(vertexPosition.x - scaledDifference + xOffset, vertexPosition.yzw);" +
       "}";
   private static final String FRAGMENT_SHADER_CODE =
       "precision mediump float;" +
@@ -20,6 +22,7 @@ abstract class TransformableRenderable extends Renderable
 
   float m_xOffset = 0.0f;
   float m_xScale = 1.0f;
+  float m_xScalePosition = 0.0f;
 
   TransformableRenderable(float[] coords)
   {
@@ -31,9 +34,10 @@ abstract class TransformableRenderable extends Renderable
     m_xOffset = xOffset;
   }
 
-  public void setXScale(float xScale)
+  public void setXScale(float xScale, float xScalePosition)
   {
     m_xScale = xScale;
+    m_xScalePosition = xScalePosition;
   }
 
   static int getShaderHandle()

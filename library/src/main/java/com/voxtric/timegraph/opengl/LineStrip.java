@@ -26,6 +26,9 @@ public class LineStrip extends TransformableRenderable
     int xScaleHandle = GLES20.glGetUniformLocation(shaderHandle, "xScale");
     GLES20.glUniform1f(xScaleHandle, m_xScale);
 
+    int xScalePositionHandle = GLES20.glGetUniformLocation(shaderHandle, "xScalePosition");
+    GLES20.glUniform1f(xScalePositionHandle, m_xScalePosition);
+
     GLES20.glDrawArrays(GLES20.GL_LINE_STRIP, 0, getVertexCount());
   }
 }

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -48,6 +49,8 @@ public class TimeGraph extends ConstraintLayout
 
   private long m_startTimestamp = 0L;
   private long m_endTimestamp = 0L;
+  private long m_beforeScalingStartTimestamp = Long.MIN_VALUE;
+  private long m_beforeScalingEndTimestamp = Long.MAX_VALUE;
   private DataAccessor m_dataAccessor = null;
 
   private boolean m_refreshing = false;
@@ -67,6 +70,9 @@ public class TimeGraph extends ConstraintLayout
   private TextView m_minValueView = null;
   private TextView m_maxValueView = null;
   private ArrayList<TimeAxisLabel> m_timeAxisLabels = null;
+
+  private Data m_firstDataPoint = null;
+  private Data m_lastDataPoint = null;
 
   public TimeGraph(Context context)
   {
@@ -220,7 +226,7 @@ public class TimeGraph extends ConstraintLayout
             float offset = widthMultiplier * m_graphSurfaceView.getWidth();
             timeAxisLabel.view.animate().translationX(0.0f).setDuration(0).start();
             timeAxisLabel.view.animate().translationXBy(offset).setDuration(0).start();
-            timeAxisLabel.offset = offset - (m_graphSurfaceView.getWidth() * 0.5f);
+            timeAxisLabel.offset = offset;
 
             if (timeAxisLabel.marker != null)
             {
@@ -326,15 +332,15 @@ public class TimeGraph extends ConstraintLayout
     final long timeDifference = m_endTimestamp - m_startTimestamp;
     if (timeDifference > 0L)
     {
-      createNewDataLine(timeDifference);
+      createNewDataLineStrip(timeDifference);
     }
     else
     {
-      clearDataLine();
+      clearDataLineStrip();
     }
   }
 
-  private void createNewDataLine(final long timeDifference)
+  private void createNewDataLineStrip(final long timeDifference)
   {
     m_refreshing = true;
     post(new Runnable()
@@ -371,6 +377,8 @@ public class TimeGraph extends ConstraintLayout
                                                m_endTimestamp);
           if (data != null)
           {
+            m_firstDataPoint = data[0];
+            m_lastDataPoint = data[data.length - 1];
             setTimeAxisLabels(m_dataAccessor.getLabelsForData(data));
 
             float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
@@ -388,6 +396,8 @@ public class TimeGraph extends ConstraintLayout
             m_minXOffset = ((data[0].timestamp - m_startTimestamp - timeDifference) / -floatTimeDifference) - 1.0f + m_overScroll;
             m_maxXOffset = ((m_endTimestamp + timeDifference - data[data.length - 1].timestamp) / floatTimeDifference) - 1.0f - m_overScroll;
             m_xScale = 1.0f;
+            m_beforeScalingStartTimestamp = Long.MIN_VALUE;
+            m_beforeScalingEndTimestamp = Long.MAX_VALUE;
 
             m_dataLine = m_graphSurfaceView.addLineStrip(coords);
           }
@@ -411,7 +421,7 @@ public class TimeGraph extends ConstraintLayout
     });
   }
 
-  private void clearDataLine()
+  private void clearDataLineStrip()
   {
     if (m_dataLine != null)
     {
@@ -439,6 +449,8 @@ public class TimeGraph extends ConstraintLayout
       normalisedScrollDelta = -Math.min(Math.abs(normalisedScrollDelta), m_xOffset - m_maxXOffset);
     }
 
+    m_xOffset += normalisedScrollDelta;
+
     float pixelMove = normalisedScrollDelta * m_graphSurfaceView.getWidth();
     for (TimeAxisLabel label : m_timeAxisLabels)
     {
@@ -450,7 +462,6 @@ public class TimeGraph extends ConstraintLayout
     m_startTimestamp -= timeDifference * normalisedScrollDelta;
     m_endTimestamp -= timeDifference * normalisedScrollDelta;
 
-    m_xOffset += normalisedScrollDelta;
     if (m_dataLine != null)
     {
       m_dataLine.setXOffset(m_xOffset * 2.0f);
@@ -465,30 +476,45 @@ public class TimeGraph extends ConstraintLayout
     m_graphSurfaceView.requestRender();
   }
 
-  public void scaleData(float normalisedScaleDelta)
+  public void scaleData(float normalisedScaleDelta, float normalisedXCentre)
   {
-    for (TimeAxisLabel label : m_timeAxisLabels)
+    scrollData(-m_xOffset);
+    if (m_beforeScalingStartTimestamp == Long.MIN_VALUE && m_beforeScalingEndTimestamp == Long.MAX_VALUE)
     {
-      float pixelMove = label.offset * normalisedScaleDelta;
-      label.view.animate().translationXBy(pixelMove).setDuration(0).start();
-      label.offset += pixelMove;
+      m_beforeScalingStartTimestamp = m_startTimestamp;
+      m_beforeScalingEndTimestamp = m_endTimestamp;
     }
 
-    long timeDifference = m_endTimestamp - m_startTimestamp;
+    m_xScale *= 1.0f + normalisedScaleDelta;
+
+    // TODO: Centre timestamp scaling
+    /*long timeDifference = m_endTimestamp - m_startTimestamp;
     long timeChange = (long)(((timeDifference * (1.0f + normalisedScaleDelta)) - timeDifference) * 0.5f);
     m_startTimestamp += timeChange;
-    m_endTimestamp -= timeChange;
+    m_endTimestamp -= timeChange;*/
 
-    m_xScale *= 1.0f + normalisedScaleDelta;
+    long timeDifference = m_beforeScalingEndTimestamp - m_beforeScalingStartTimestamp;
+    long newTimeDifference = (long)(timeDifference * m_xScale);
+    m_startTimestamp = m_beforeScalingStartTimestamp - (long)(newTimeDifference * normalisedXCentre);
+    m_endTimestamp = m_beforeScalingEndTimestamp + (long)(newTimeDifference * (1.0f - normalisedXCentre));
+
+
+    for (TimeAxisLabel label : m_timeAxisLabels)
+    {
+      float labelScaledDifference = ((normalisedXCentre * m_graphSurfaceView.getWidth()) - label.offset) * (m_xScale - 1.0f);
+      float labelPosition = label.offset - labelScaledDifference;
+      label.view.animate().translationX(labelPosition).setDuration(0).start();
+    }
+
     if (m_dataLine != null)
     {
-      m_dataLine.setXScale(m_xScale);
+      m_dataLine.setXScale(m_xScale, (normalisedXCentre * 2.0f) - 1.0f);
     }
     for (TimeAxisLabel label : m_timeAxisLabels)
     {
       if (label.marker != null)
       {
-        label.marker.setXScale(m_xScale);
+        label.marker.setXScale(m_xScale, (normalisedXCentre * 2.0f) - 1.0f);
       }
     }
     m_graphSurfaceView.requestRender();
