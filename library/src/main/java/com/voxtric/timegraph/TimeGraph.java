@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -45,8 +46,8 @@ public class TimeGraph extends ConstraintLayout
   private CharSequence m_noDataText = DEFAULT_NO_DATA_TEXT;
   private float m_overScroll = DEFAULT_OVER_SCROLL;
 
-  private long m_startTimestamp = 0;
-  private long m_endTimestamp = 1;
+  private long m_startTimestamp = 0L;
+  private long m_endTimestamp = 0L;
   private DataAccessor m_dataAccessor = null;
 
   private boolean m_refreshing = false;
@@ -57,6 +58,7 @@ public class TimeGraph extends ConstraintLayout
   private float m_xOffset = 0.0f;
   private float m_minXOffset = 0.0f;
   private float m_maxXOffset = 0.0f;
+  private float m_xScale = 1.0f;
   private Line m_dataLine = null;
 
   private RelativeLayout m_timeLabelsLayoutView = null;
@@ -64,7 +66,7 @@ public class TimeGraph extends ConstraintLayout
 
   private TextView m_minValueView = null;
   private TextView m_maxValueView = null;
-  private ArrayList<TextView> m_timeLabelViews = null;
+  private ArrayList<TimeAxisLabel> m_timeAxisLabels = null;
 
   public TimeGraph(Context context)
   {
@@ -173,54 +175,55 @@ public class TimeGraph extends ConstraintLayout
     return m_overScroll;
   }
 
-  public void setTimeAxisLabels(final TimeLabel[] timeLabels)
+  public void setTimeAxisLabels(final TimeAxisLabelData[] timeAxisLabelData)
   {
-    if (timeLabels != null)
+    if (timeAxisLabelData != null)
     {
       post(new Runnable()
       {
         @Override
         public void run()
         {
-          if (m_timeLabelViews == null)
+          if (m_timeAxisLabels == null)
           {
-            m_timeLabelViews = new ArrayList<>(timeLabels.length);
+            m_timeAxisLabels = new ArrayList<>(timeAxisLabelData.length);
           }
 
           double difference = (double)(m_endTimestamp - m_startTimestamp);
           int index = 0;
-          for (; index < timeLabels.length; index++)
+          for (; index < timeAxisLabelData.length; index++)
           {
 
-            TextView textView;
-            if (index >= m_timeLabelViews.size())
+            TimeAxisLabel timeAxisLabel;
+            if (index >= m_timeAxisLabels.size())
             {
-              textView = createTextView(getContext());
-              m_timeLabelsLayoutView.addView(textView);
-              m_timeLabelViews.add(textView);
+              timeAxisLabel = new TimeAxisLabel(createTextView(getContext()));
+              m_timeLabelsLayoutView.addView(timeAxisLabel.view);
+              m_timeAxisLabels.add(timeAxisLabel);
             }
             else
             {
-              textView = m_timeLabelViews.get(index);
-              if (textView == null)
+              timeAxisLabel = m_timeAxisLabels.get(index);
+              if (timeAxisLabel == null)
               {
-                textView = createTextView(getContext());
-                m_timeLabelsLayoutView.addView(textView);
-                m_timeLabelViews.set(index, textView);
+                timeAxisLabel = new TimeAxisLabel(createTextView(getContext()));
+                m_timeLabelsLayoutView.addView(timeAxisLabel.view);
+                //m_timeAxisLabels.set(index, textViewPair);
               }
             }
 
-            textView.setText(timeLabels[index].label);
-            float widthMultiplier = 1.0f - (float)((double)(m_endTimestamp - timeLabels[index].timestamp) / difference);
+            timeAxisLabel.view.setText(timeAxisLabelData[index].label);
+            float widthMultiplier = 1.0f - (float)((double)(m_endTimestamp - timeAxisLabelData[index].timestamp) / difference);
             float offset = widthMultiplier * m_graphSurfaceView.getWidth();
-            textView.animate().translationX(0.0f).setDuration(0).start();
-            textView.animate().translationXBy(offset).setDuration(0).start();
+            timeAxisLabel.view.animate().translationX(0.0f).setDuration(0).start();
+            timeAxisLabel.view.animate().translationXBy(offset).setDuration(0).start();
+            timeAxisLabel.offset = offset - (m_graphSurfaceView.getWidth() * 0.5f);
           }
 
-          for (int i = m_timeLabelViews.size() - 1; i >= index; i--)
+          for (int i = m_timeAxisLabels.size() - 1; i >= index; i--)
           {
-            m_timeLabelsLayoutView.removeView(m_timeLabelViews.get(i));
-            m_timeLabelViews.remove(i);
+            m_timeLabelsLayoutView.removeView(m_timeAxisLabels.get(i).view);
+            m_timeAxisLabels.remove(i);
           }
         }
       });
@@ -369,6 +372,7 @@ public class TimeGraph extends ConstraintLayout
             m_xOffset = 0.0f;
             m_minXOffset = ((data[0].timestamp - m_startTimestamp - timeDifference) / -floatTimeDifference) - 1.0f + m_overScroll;
             m_maxXOffset = ((m_endTimestamp + timeDifference - data[data.length - 1].timestamp) / floatTimeDifference) - 1.0f - m_overScroll;
+            m_xScale = 1.0f;
 
             m_dataLine = m_graphSurfaceView.addLine(coords);
           }
@@ -398,7 +402,7 @@ public class TimeGraph extends ConstraintLayout
     {
       m_graphSurfaceView.removeRenderable(m_dataLine);
     }
-    setTimeAxisLabels(new TimeLabel[0]);
+    setTimeAxisLabels(new TimeAxisLabelData[0]);
     post(new Runnable()
     {
       @Override
@@ -409,30 +413,56 @@ public class TimeGraph extends ConstraintLayout
     });
   }
 
-  public void scrollAlong(float normalised)
+  public void scrollData(float normalisedScrollDelta)
   {
-    if (normalised > 0.0f)
+    if (normalisedScrollDelta > 0.0f)
     {
-      normalised = Math.min(normalised, m_minXOffset - m_xOffset);
+      normalisedScrollDelta = Math.min(normalisedScrollDelta, m_minXOffset - m_xOffset);
     }
     else
     {
-      normalised = -Math.min(Math.abs(normalised), m_xOffset - m_maxXOffset);
+      normalisedScrollDelta = -Math.min(Math.abs(normalisedScrollDelta), m_xOffset - m_maxXOffset);
     }
 
-    float pixelMove = normalised * m_graphSurfaceView.getWidth();
-    for (TextView view : m_timeLabelViews)
+    float pixelMove = normalisedScrollDelta * m_graphSurfaceView.getWidth();
+    for (TimeAxisLabel label : m_timeAxisLabels)
     {
-      view.animate().translationXBy(pixelMove).setDuration(0).start();
+      label.view.animate().translationXBy(pixelMove).setDuration(0).start();
+      label.offset += pixelMove;
     }
 
     long timeDifference = m_endTimestamp - m_startTimestamp;
-    m_startTimestamp -= timeDifference * normalised;
-    m_endTimestamp -= timeDifference * normalised;
+    m_startTimestamp -= timeDifference * normalisedScrollDelta;
+    m_endTimestamp -= timeDifference * normalisedScrollDelta;
 
-    m_xOffset += normalised;
-    m_dataLine.setXOffset(m_xOffset * 2.0f);
-    m_graphSurfaceView.requestRender();
+    m_xOffset += normalisedScrollDelta;
+    if (m_dataLine != null)
+    {
+      m_dataLine.setXOffset(m_xOffset * 2.0f);
+      m_graphSurfaceView.requestRender();
+    }
+  }
+
+  public void scaleData(float normalisedScaleDelta)
+  {
+    for (TimeAxisLabel label : m_timeAxisLabels)
+    {
+      float pixelMove = label.offset * normalisedScaleDelta;
+      label.view.animate().translationXBy(pixelMove).setDuration(0).start();
+      label.offset += pixelMove;
+    }
+
+    long timeDifference = m_endTimestamp - m_startTimestamp;
+    long timeChange = (long)(((timeDifference * (1.0f + normalisedScaleDelta)) - timeDifference) * 0.5f);
+    m_startTimestamp += timeChange;
+    m_endTimestamp -= timeChange;
+
+    m_xScale *= 1.0f + normalisedScaleDelta;
+    if (m_dataLine != null)
+    {
+      m_dataLine.setXScale(m_xScale);
+      m_graphSurfaceView.requestRender();
+    }
   }
 
   private void applyAttributes(Context context, AttributeSet attrs)
@@ -532,20 +562,20 @@ public class TimeGraph extends ConstraintLayout
     return px / context.getResources().getDisplayMetrics().density;
   }
 
-  public static class TimeLabel
+  public static class TimeAxisLabelData
   {
     long timestamp;
     String label;
 
-    TimeLabel(long timestamp, String label)
+    TimeAxisLabelData(long timestamp, String label)
     {
       this.timestamp = timestamp;
       this.label = label;
     }
 
-    public static TimeLabel[] labelDays(Data[] data)
+    public static TimeAxisLabelData[] labelDays(Data[] data)
     {
-      ArrayList<TimeLabel> timeLabels = new ArrayList<>();
+      ArrayList<TimeAxisLabelData> timeAxisLabelData = new ArrayList<>();
       long lastDay = Long.MIN_VALUE;
       Calendar calendar = Calendar.getInstance();
 
@@ -562,11 +592,29 @@ public class TimeGraph extends ConstraintLayout
           lastDay = calendar.getTimeInMillis();
           Date date = calendar.getTime();
           DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.SHORT);
-          timeLabels.add(new TimeLabel(lastDay, dateFormat.format(date)));
+          timeAxisLabelData.add(new TimeAxisLabelData(lastDay, dateFormat.format(date)));
         }
       }
 
-      return timeLabels.toArray(new TimeLabel[0]);
+      return timeAxisLabelData.toArray(new TimeAxisLabelData[0]);
+    }
+  }
+
+  private static class TimeAxisLabel
+  {
+    float offset;
+    TextView view;
+
+    TimeAxisLabel(TextView view)
+    {
+      this.offset = 0.0f;
+      this.view = view;
+    }
+
+    TimeAxisLabel(float offset, TextView view)
+    {
+      this.offset = offset;
+      this.view = view;
     }
   }
 
@@ -585,6 +633,6 @@ public class TimeGraph extends ConstraintLayout
   public interface DataAccessor
   {
     Data[] getData(long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp);
-    TimeLabel[] getLabelsForData(Data[] data);
+    TimeAxisLabelData[] getLabelsForData(Data[] data);
   }
 }

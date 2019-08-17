@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     m_timeGraph = findViewById(R.id.time_graph);
 
     m_timeGraph.setMidValueAxisLabels(new float[] { 4.0f, 8.0f, 12.0f });
-    m_timeGraph.setVisibleDataPeriod(0, 432000000, MainActivity.this);
+    m_timeGraph.setVisibleDataPeriod(0, 216000000, MainActivity.this);
   }
 
   @Override
@@ -40,8 +40,8 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
   }
 
   @Override
-  public TimeGraph.TimeLabel[] getLabelsForData(TimeGraph.Data[] data)
+  public TimeGraph.TimeAxisLabelData[] getLabelsForData(TimeGraph.Data[] data)
   {
-    return TimeGraph.TimeLabel.labelDays(data);
+    return TimeGraph.TimeAxisLabelData.labelDays(data);
   }
 }

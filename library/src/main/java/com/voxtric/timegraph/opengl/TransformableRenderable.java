@@ -2,18 +2,14 @@ package com.voxtric.timegraph.opengl;
 
 import android.opengl.GLES20;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
-
-public abstract class Renderable
+abstract class TransformableRenderable extends Renderable
 {
-  public static final int COORDS_PER_VERTEX = 2;
-
   private static final String VERTEX_SHADER_CODE =
+      "uniform float xOffset;" +
+      "uniform float xScale;" +
       "attribute vec4 vertexPosition;" +
       "void main() {" +
-      "  gl_Position = vertexPosition;" +
+      "  gl_Position = vec4((vertexPosition.x * xScale) + xOffset, vertexPosition.yzw);" +
       "}";
   private static final String FRAGMENT_SHADER_CODE =
       "precision mediump float;" +
@@ -22,32 +18,23 @@ public abstract class Renderable
       "}";
   private static int s_shaderHandle = -1;
 
-  private FloatBuffer m_vertexBuffer;
-  private int m_vertexCount;
+  float m_xOffset = 0.0f;
+  float m_xScale = 1.0f;
 
-  Renderable(float[] coords)
+  TransformableRenderable(float[] coords)
   {
-    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(coords.length * (Float.SIZE / Byte.SIZE));
-    byteBuffer.order(ByteOrder.nativeOrder());
-
-    m_vertexBuffer = byteBuffer.asFloatBuffer();
-    m_vertexBuffer.put(coords);
-    m_vertexBuffer.position(0);
-
-    m_vertexCount = coords.length / COORDS_PER_VERTEX;
+    super(coords);
   }
 
-  FloatBuffer getVertexBuffer()
+  public void setXOffset(float xOffset)
   {
-    return m_vertexBuffer;
+    m_xOffset = xOffset;
   }
 
-  int getVertexCount()
+  public void setXScale(float xScale)
   {
-    return m_vertexCount;
+    m_xScale = xScale;
   }
-
-  public abstract void draw();
 
   static int getShaderHandle()
   {
@@ -63,13 +50,5 @@ public abstract class Renderable
       GLES20.glUseProgram(s_shaderHandle);
     }
     return s_shaderHandle;
-  }
-
-  protected static int loadShader(int type, String shaderCode)
-  {
-    int shaderHandle = GLES20.glCreateShader(type);
-    GLES20.glShaderSource(shaderHandle, shaderCode);
-    GLES20.glCompileShader(shaderHandle);
-    return shaderHandle;
   }
 }

@@ -13,6 +13,9 @@ public class GraphSurface extends GLSurfaceView
   private GraphRenderer m_renderer = null;
 
   private float m_previousPixelX = 0.0f;
+  private float m_previousPixelDistance = 0.0f;
+  private boolean m_scaling = false;
+  private boolean m_ignoreScroll = false;
 
   public GraphSurface(Context context)
   {
@@ -38,26 +41,67 @@ public class GraphSurface extends GLSurfaceView
   @Override
   public boolean onTouchEvent(MotionEvent motionEvent)
   {
-    boolean handled = false;
-    float pixelX = motionEvent.getX();
+    boolean handled;
 
-    switch (motionEvent.getAction())
+    int pointerIndex = motionEvent.getActionIndex();
+    int pointerId = motionEvent.getPointerId(pointerIndex);
+
+    switch (motionEvent.getActionMasked())
     {
     case MotionEvent.ACTION_DOWN:
+      m_previousPixelX = motionEvent.getX();
       handled = true;
       break;
-    case MotionEvent.ACTION_MOVE:
-      float pixelDx = pixelX - m_previousPixelX;
-      float normalisedDx = pixelDx / getWidth();
-      m_timeGraph.scrollAlong(normalisedDx);
-      handled = true;
-      break;
+
     case MotionEvent.ACTION_UP:
       m_timeGraph.refresh();
       handled = true;
+      break;
+
+    case MotionEvent.ACTION_POINTER_DOWN:
+      m_scaling = true;
+      float startingXDifference = motionEvent.getX(0) - motionEvent.getX(1);
+      float startingYDifference = motionEvent.getY(0) - motionEvent.getY(1);
+      m_previousPixelDistance = (float)Math.sqrt((startingXDifference * startingXDifference) + (startingYDifference * startingYDifference));
+      handled = true;
+      break;
+
+    case MotionEvent.ACTION_POINTER_UP:
+      m_scaling = false;
+      m_timeGraph.refresh();
+      handled = true;
+      break;
+
+    case MotionEvent.ACTION_MOVE:
+      if (!m_scaling)
+      {
+        if (!m_ignoreScroll)
+        {
+          float pixelX = motionEvent.getX();
+          float pixelXDelta = pixelX - m_previousPixelX;
+          float normalisedXDelta = pixelXDelta / getWidth();
+          m_timeGraph.scrollData(normalisedXDelta);
+          m_previousPixelX = pixelX;
+        }
+        m_ignoreScroll = false;
+      }
+      else if (motionEvent.getPointerCount() >= 2)
+      {
+        float pixelXDifference = motionEvent.getX(0) - motionEvent.getX(1);
+        float pixelYDifference = motionEvent.getY(0) - motionEvent.getY(1);
+        float pixelDistance = (float)Math.sqrt((pixelXDifference * pixelXDifference) + (pixelYDifference * pixelYDifference));
+        float normalisedDistanceDelta = (pixelDistance - m_previousPixelDistance) / getWidth();
+        m_timeGraph.scaleData(normalisedDistanceDelta);
+        m_ignoreScroll = true;
+        m_previousPixelDistance = pixelDistance;
+      }
+      handled = true;
+      break;
+
+    default:
+      handled = false;
     }
 
-    m_previousPixelX = pixelX;
     return handled;
   }
 

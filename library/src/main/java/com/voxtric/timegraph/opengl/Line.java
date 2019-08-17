@@ -2,9 +2,9 @@ package com.voxtric.timegraph.opengl;
 
 import android.opengl.GLES20;
 
-public class Line extends Renderable
+public class Line extends TransformableRenderable
 {
-  public Line(float[] coords)
+  Line(float[] coords)
   {
     super(coords);
   }
@@ -12,7 +12,7 @@ public class Line extends Renderable
   @Override
   public void draw()
   {
-    int shaderHandle = Renderable.getShaderHandle();
+    int shaderHandle = TransformableRenderable.getShaderHandle();
 
     int vertexPositionHandle = GLES20.glGetAttribLocation(shaderHandle, "vertexPosition");
     GLES20.glEnableVertexAttribArray(vertexPositionHandle);
@@ -22,6 +22,9 @@ public class Line extends Renderable
 
     int xOffsetHandle = GLES20.glGetUniformLocation(shaderHandle, "xOffset");
     GLES20.glUniform1f(xOffsetHandle, m_xOffset);
+
+    int xScaleHandle = GLES20.glGetUniformLocation(shaderHandle, "xScale");
+    GLES20.glUniform1f(xScaleHandle, m_xScale);
 
     GLES20.glDrawArrays(GLES20.GL_LINE_STRIP, 0, getVertexCount());
   }
