@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -30,6 +29,7 @@ public class TimeGraph extends ConstraintLayout
   private static final boolean DEFAULT_SHOW_TIME_AXIS = true;
   private static final boolean DEFAULT_SHOW_VALUE_AXIS = true;
   private static final boolean DEFAULT_SHOW_REFRESH_PROGRESS = true;
+  private static final float DEFAULT_OVER_SCROLL = 0.0f;
 
   private static final float VALUE_AXIS_MARGIN_DP = 4.0f;
 
@@ -38,6 +38,7 @@ public class TimeGraph extends ConstraintLayout
   private boolean m_showTimeAxis = DEFAULT_SHOW_TIME_AXIS;
   private boolean m_showValueAxis = DEFAULT_SHOW_VALUE_AXIS;
   private boolean m_showRefreshProgress = DEFAULT_SHOW_REFRESH_PROGRESS;
+  private float m_overScroll = DEFAULT_OVER_SCROLL;
 
   private long m_startTimestamp = 0;
   private long m_endTimestamp = 1;
@@ -154,6 +155,16 @@ public class TimeGraph extends ConstraintLayout
   public boolean getShowRefreshProgress()
   {
     return m_showRefreshProgress;
+  }
+
+  public void setOverScroll(float value)
+  {
+    m_overScroll = value;
+  }
+
+  public float getOverScroll()
+  {
+    return m_overScroll;
   }
 
   public void setTimeAxisLabels(final TimeLabel[] timeLabels)
@@ -322,8 +333,8 @@ public class TimeGraph extends ConstraintLayout
           }
 
           m_xOffset = 0.0f;
-          m_minXOffset = ((data[0].timestamp - m_startTimestamp - timeDifference) / -floatTimeDifference) - 1.0f;
-          m_maxXOffset = ((m_endTimestamp + timeDifference - data[data.length - 1].timestamp) / floatTimeDifference) - 1.0f;
+          m_minXOffset = ((data[0].timestamp - m_startTimestamp - timeDifference) / -floatTimeDifference) - 1.0f + m_overScroll;
+          m_maxXOffset = ((m_endTimestamp + timeDifference - data[data.length - 1].timestamp) / floatTimeDifference) - 1.0f - m_overScroll;
 
           m_dataLine = m_graphSurfaceView.addLine(coords);
         }
@@ -380,6 +391,7 @@ public class TimeGraph extends ConstraintLayout
       m_showTimeAxis = attributes.getBoolean(R.styleable.TimeGraph_showTimeAxis, DEFAULT_SHOW_TIME_AXIS);
       m_showValueAxis = attributes.getBoolean(R.styleable.TimeGraph_showValueAxis, DEFAULT_SHOW_VALUE_AXIS);
       m_showRefreshProgress = attributes.getBoolean(R.styleable.TimeGraph_showRefreshProgress, DEFAULT_SHOW_REFRESH_PROGRESS);
+      m_overScroll = attributes.getFraction(R.styleable.TimeGraph_overScroll, 1, 1, DEFAULT_OVER_SCROLL);
 
       if (m_minValue > m_maxValue)
       {

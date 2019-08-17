@@ -6,5 +6,6 @@
         <attr name="showTimeAxis" format="boolean"/>
         <attr name="showValueAxis" format="boolean"/>
         <attr name="showRefreshProgress" format="boolean"/>
+        <attr name="overScroll" format="fraction"/>
     </declare-styleable>
 </resources>
