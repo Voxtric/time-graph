@@ -48,6 +48,8 @@ public class TimeGraph extends ConstraintLayout
 
   private GraphSurface m_graphSurfaceView = null;
   private float m_xOffset = 0.0f;
+  private float m_minXOffset = 0.0f;
+  private float m_maxXOffset = 0.0f;
   private Line m_dataLine = null;
 
   private RelativeLayout m_timeLabelsLayoutView = null;
@@ -296,6 +298,7 @@ public class TimeGraph extends ConstraintLayout
       public void run()
       {
         long timeDifference = m_endTimestamp - m_startTimestamp;
+        float floatTimeDifference = (float)timeDifference;
         float valueDifference = m_maxValue - m_minValue;
         if (m_dataLine != null)
         {
@@ -311,13 +314,17 @@ public class TimeGraph extends ConstraintLayout
           int coordsIndex = 0;
           for (Data datum : data)
           {
-            float xCoord = 1.0f - (float)((m_endTimestamp - datum.timestamp) / (double)timeDifference);
+            float xCoord = 1.0f - (m_endTimestamp - datum.timestamp) / floatTimeDifference;
             float yCoord = (m_maxValue - datum.value) / valueDifference;
             coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
             coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
             coordsIndex += 2;
           }
+
           m_xOffset = 0.0f;
+          m_minXOffset = ((data[0].timestamp - m_startTimestamp - timeDifference) / -floatTimeDifference) - 1.0f;
+          m_maxXOffset = ((m_endTimestamp + timeDifference - data[data.length - 1].timestamp) / floatTimeDifference) - 1.0f;
+
           m_dataLine = m_graphSurfaceView.addLine(coords);
         }
 
@@ -337,19 +344,29 @@ public class TimeGraph extends ConstraintLayout
     });
   }
 
-  public void scrollAlong(float pixel, float normalised)
+  public void scrollAlong(float normalised)
   {
+    if (normalised > 0.0f)
+    {
+      normalised = Math.min(normalised, m_minXOffset - m_xOffset);
+    }
+    else
+    {
+      normalised = -Math.min(Math.abs(normalised), m_xOffset - m_maxXOffset);
+    }
+
+    float pixelMove = normalised * m_graphSurfaceView.getWidth();
     for (TextView view : m_timeLabelViews)
     {
-      view.animate().translationXBy(pixel).setDuration(0).start();
+      view.animate().translationXBy(pixelMove).setDuration(0).start();
     }
 
     long timeDifference = m_endTimestamp - m_startTimestamp;
     m_startTimestamp -= timeDifference * normalised;
     m_endTimestamp -= timeDifference * normalised;
 
-    m_xOffset += normalised * 2.0f;
-    m_dataLine.setXOffset(m_xOffset);
+    m_xOffset += normalised;
+    m_dataLine.setXOffset(m_xOffset * 2.0f);
     m_graphSurfaceView.requestRender();
   }
 

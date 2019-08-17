@@ -48,7 +48,7 @@ public class GraphSurface extends GLSurfaceView
     case MotionEvent.ACTION_MOVE:
       float pixelDx = pixelX - m_previousPixelX;
       float normalisedDx = pixelDx / getWidth();
-      m_timeGraph.scrollAlong(pixelDx, normalisedDx);
+      m_timeGraph.scrollAlong(normalisedDx);
       handled = true;
       break;
     case MotionEvent.ACTION_UP:

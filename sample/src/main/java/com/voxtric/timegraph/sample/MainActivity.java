@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements TimeGraph.DataAccessor
 {
-  TimeGraph.Data[] m_testData = new TimeGraph.Data[10];
+  TimeGraph.Data[] m_testData = new TimeGraph.Data[100];
   TimeGraph m_timeGraph = null;
 
   @Override
@@ -33,36 +33,10 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     m_timeGraph.setVisibleDataPeriod(0, 432000000, this);
   }
 
-  private TimeGraph.Data[] getData(long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp, int recursionDepth)
-  {
-    if (recursionDepth > 1)
-    {
-      return m_testData;
-    }
-    else if (visibleStartTimestamp < m_testData[0].timestamp)
-    {
-      long difference = m_testData[0].timestamp - visibleStartTimestamp;
-      return getData(startTimestamp + difference, endTimestamp + difference,
-                     visibleStartTimestamp + difference, visibleEndTimestamp + difference,
-                     recursionDepth + 1);
-    }
-    else if (visibleEndTimestamp > m_testData[m_testData.length - 1].timestamp)
-    {
-      long difference = visibleEndTimestamp - m_testData[m_testData.length - 1].timestamp;
-      return getData(startTimestamp - difference, endTimestamp - difference,
-                     visibleStartTimestamp - difference, visibleEndTimestamp - difference,
-                     recursionDepth + 1);
-    }
-    else
-    {
-      return m_testData;
-    }
-  }
-
   @Override
   public TimeGraph.Data[] getData(long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp)
   {
-    return getData(startTimestamp, endTimestamp, visibleStartTimestamp, visibleEndTimestamp, 0);
+    return m_testData;
   }
 
   @Override
