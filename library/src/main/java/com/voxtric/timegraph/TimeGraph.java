@@ -496,59 +496,78 @@ public class TimeGraph extends ConstraintLayout
 
   public void scaleData(float normalisedScaleDelta, float normalisedXCentre)
   {
-    if (m_normalisedForcedXCentre != -1.0f)
+    if (dataFits() || normalisedScaleDelta > 0.0f)
     {
-      normalisedXCentre = m_normalisedForcedXCentre;
-    }
-
-    if (m_beforeScalingStartTimestamp == Long.MIN_VALUE && m_beforeScalingEndTimestamp == Long.MAX_VALUE)
-    {
-      scrollData(-m_xOffset);
-      m_beforeScalingStartTimestamp = m_startTimestamp;
-      m_beforeScalingEndTimestamp = m_endTimestamp;
-    }
-
-    m_xScale *= 1.0f + normalisedScaleDelta;
-
-    float timingScale = 1.0f / m_xScale;
-    m_startTimestamp = (long)scaleValue(m_beforeScalingStartTimestamp, m_beforeScalingEndTimestamp, m_beforeScalingStartTimestamp, timingScale, normalisedXCentre);
-    m_endTimestamp = (long)scaleValue(m_beforeScalingStartTimestamp, m_beforeScalingEndTimestamp, m_beforeScalingEndTimestamp, timingScale, normalisedXCentre);
-
-    long startToFirstDifference = m_firstDataEntry.timestamp - m_startTimestamp;
-    long endToLastDifference = m_endTimestamp - m_lastDataEntry.timestamp;
-    if (startToFirstDifference > 0 && endToLastDifference <= 0)
-    {
-      m_startTimestamp += startToFirstDifference;
-      m_endTimestamp += startToFirstDifference;
-      refresh();
-      m_normalisedForcedXCentre = 0.0f;
-    }
-    else if (endToLastDifference > 0 && startToFirstDifference <= 0)
-    {
-      m_startTimestamp -= endToLastDifference;
-      m_endTimestamp -= endToLastDifference;
-      refresh();
-      m_normalisedForcedXCentre = 1.0f;
-    }
-
-    for (TimeAxisLabel label : m_timeAxisLabels)
-    {
-      float labelPosition = (float)scaleValue(0.0, m_graphSurfaceView.getWidth(), label.offset, m_xScale, normalisedXCentre);
-      label.view.animate().translationX(labelPosition).setDuration(0).start();
-    }
-
-    if (m_dataLine != null)
-    {
-      m_dataLine.setXScale(m_xScale, (normalisedXCentre * 2.0f) - 1.0f);
-    }
-    for (TimeAxisLabel label : m_timeAxisLabels)
-    {
-      if (label.marker != null)
+      if (m_normalisedForcedXCentre != -1.0f)
       {
-        label.marker.setXScale(m_xScale, (normalisedXCentre * 2.0f) - 1.0f);
+        normalisedXCentre = m_normalisedForcedXCentre;
+      }
+
+      if (m_beforeScalingStartTimestamp == Long.MIN_VALUE && m_beforeScalingEndTimestamp == Long.MAX_VALUE)
+      {
+        scrollData(-m_xOffset);
+        m_beforeScalingStartTimestamp = m_startTimestamp;
+        m_beforeScalingEndTimestamp = m_endTimestamp;
+      }
+
+      m_xScale *= 1.0f + normalisedScaleDelta;
+
+      float timingScale = 1.0f / m_xScale;
+      m_startTimestamp = (long)scaleValue(
+          m_beforeScalingStartTimestamp,
+          m_beforeScalingEndTimestamp,
+          m_beforeScalingStartTimestamp,
+          timingScale,
+          normalisedXCentre);
+      m_endTimestamp = (long)scaleValue(
+          m_beforeScalingStartTimestamp,
+          m_beforeScalingEndTimestamp,
+          m_beforeScalingEndTimestamp,
+          timingScale,
+          normalisedXCentre);
+
+      long startToFirstDifference = m_firstDataEntry.timestamp - m_startTimestamp;
+      long endToLastDifference = m_endTimestamp - m_lastDataEntry.timestamp;
+      if (startToFirstDifference > 0 && endToLastDifference <= 0)
+      {
+        m_startTimestamp += startToFirstDifference;
+        m_endTimestamp += startToFirstDifference;
+        refresh();
+        m_normalisedForcedXCentre = 0.0f;
+      }
+      else if (endToLastDifference > 0 && startToFirstDifference <= 0)
+      {
+        m_startTimestamp -= endToLastDifference;
+        m_endTimestamp -= endToLastDifference;
+        refresh();
+        m_normalisedForcedXCentre = 1.0f;
+      }
+      else
+      {
+        for (TimeAxisLabel label : m_timeAxisLabels)
+        {
+          float labelPosition = (float)scaleValue(0.0,
+                                                  m_graphSurfaceView.getWidth(),
+                                                  label.offset,
+                                                  m_xScale,
+                                                  normalisedXCentre);
+          label.view.animate().translationX(labelPosition).setDuration(0).start();
+        }
+
+        if (m_dataLine != null)
+        {
+          m_dataLine.setXScale(m_xScale, (normalisedXCentre * 2.0f) - 1.0f);
+        }
+        for (TimeAxisLabel label : m_timeAxisLabels)
+        {
+          if (label.marker != null)
+          {
+            label.marker.setXScale(m_xScale, (normalisedXCentre * 2.0f) - 1.0f);
+          }
+        }
+        m_graphSurfaceView.requestRender();
       }
     }
-    m_graphSurfaceView.requestRender();
   }
 
   private boolean dataFits()
