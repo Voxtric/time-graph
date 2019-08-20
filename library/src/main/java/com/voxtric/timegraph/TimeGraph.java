@@ -61,7 +61,11 @@ public class TimeGraph extends ConstraintLayout
   private float m_minXOffset = 0.0f;
   private float m_maxXOffset = 0.0f;
   private float m_xScale = 1.0f;
+  private float m_normalisedForcedXCentre = -1.0f;
   private LineStrip m_dataLine = null;
+
+  private Data m_firstDataEntry = null;
+  private Data m_lastDataEntry = null;
 
   private RelativeLayout m_timeLabelsLayoutView = null;
   private ArrayList<TextView> m_midValueViews = null;
@@ -69,9 +73,6 @@ public class TimeGraph extends ConstraintLayout
   private TextView m_minValueView = null;
   private TextView m_maxValueView = null;
   private ArrayList<TimeAxisLabel> m_timeAxisLabels = null;
-
-  private Data m_firstDataPoint = null;
-  private Data m_lastDataPoint = null;
 
   public TimeGraph(Context context)
   {
@@ -328,6 +329,7 @@ public class TimeGraph extends ConstraintLayout
 
   public void refresh()
   {
+    m_normalisedForcedXCentre = -1.0f;
     final long timeDifference = m_endTimestamp - m_startTimestamp;
     if (timeDifference > 0L)
     {
@@ -374,10 +376,10 @@ public class TimeGraph extends ConstraintLayout
                                                m_endTimestamp + timeDifference,
                                                m_startTimestamp,
                                                m_endTimestamp);
-          if (data != null)
+          if (data != null && data.length > 0)
           {
-            m_firstDataPoint = data[0];
-            m_lastDataPoint = data[data.length - 1];
+            m_firstDataEntry = data[0];
+            m_lastDataEntry = data[data.length - 1];
             setTimeAxisLabels(m_dataAccessor.getLabelsForData(data));
 
             float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
@@ -450,16 +452,16 @@ public class TimeGraph extends ConstraintLayout
 
     m_xOffset += normalisedScrollDelta;
 
+    long timeChange = (long)((m_endTimestamp - m_startTimestamp) * normalisedScrollDelta);
+    m_startTimestamp -= timeChange;
+    m_endTimestamp -= timeChange;
+
     float pixelMove = normalisedScrollDelta * m_graphSurfaceView.getWidth();
     for (TimeAxisLabel label : m_timeAxisLabels)
     {
       label.view.animate().translationXBy(pixelMove).setDuration(0).start();
       label.offset += pixelMove;
     }
-
-    long timeDifference = m_endTimestamp - m_startTimestamp;
-    m_startTimestamp -= timeDifference * normalisedScrollDelta;
-    m_endTimestamp -= timeDifference * normalisedScrollDelta;
 
     if (m_dataLine != null)
     {
@@ -477,9 +479,14 @@ public class TimeGraph extends ConstraintLayout
 
   public void scaleData(float normalisedScaleDelta, float normalisedXCentre)
   {
-    scrollData(-m_xOffset);
+    if (m_normalisedForcedXCentre != -1.0f)
+    {
+      normalisedXCentre = m_normalisedForcedXCentre;
+    }
+
     if (m_beforeScalingStartTimestamp == Long.MIN_VALUE && m_beforeScalingEndTimestamp == Long.MAX_VALUE)
     {
+      scrollData(-m_xOffset);
       m_beforeScalingStartTimestamp = m_startTimestamp;
       m_beforeScalingEndTimestamp = m_endTimestamp;
     }
@@ -489,6 +496,23 @@ public class TimeGraph extends ConstraintLayout
     float timingScale = 1.0f / m_xScale;
     m_startTimestamp = (long)scaleValue(m_beforeScalingStartTimestamp, m_beforeScalingEndTimestamp, m_beforeScalingStartTimestamp, timingScale, normalisedXCentre);
     m_endTimestamp = (long)scaleValue(m_beforeScalingStartTimestamp, m_beforeScalingEndTimestamp, m_beforeScalingEndTimestamp, timingScale, normalisedXCentre);
+
+    long startToFirstDifference = m_firstDataEntry.timestamp - m_startTimestamp;
+    long endToLastDifference = m_endTimestamp - m_lastDataEntry.timestamp;
+    if (startToFirstDifference > 0 && endToLastDifference <= 0)
+    {
+      m_startTimestamp += startToFirstDifference;
+      m_endTimestamp += startToFirstDifference;
+      refresh();
+      m_normalisedForcedXCentre = 0.0f;
+    }
+    else if (endToLastDifference > 0 && startToFirstDifference <= 0)
+    {
+      m_startTimestamp -= endToLastDifference;
+      m_endTimestamp -= endToLastDifference;
+      refresh();
+      m_normalisedForcedXCentre = 1.0f;
+    }
 
     for (TimeAxisLabel label : m_timeAxisLabels)
     {
@@ -508,6 +532,15 @@ public class TimeGraph extends ConstraintLayout
       }
     }
     m_graphSurfaceView.requestRender();
+  }
+
+  private boolean shouldApplyDataBoundaries()
+  {
+    long startToFirstDifference = m_firstDataEntry.timestamp - m_startTimestamp;
+    long endToLastDifference = m_endTimestamp - m_lastDataEntry.timestamp;
+    long firstToLastDistance = m_lastDataEntry.timestamp - m_firstDataEntry.timestamp;
+    return (((startToFirstDifference <= 0 && endToLastDifference > 0) || (startToFirstDifference > 0 && endToLastDifference <= 0)) &&
+        (startToFirstDifference < firstToLastDistance && endToLastDifference < firstToLastDistance));
   }
 
   private void applyAttributes(Context context, AttributeSet attrs)

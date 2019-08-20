@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements TimeGraph.DataAccessor
 {
-  TimeGraph.Data[] m_testData = new TimeGraph.Data[1000];
+  TimeGraph.Data[] m_testData = new TimeGraph.Data[7];
   TimeGraph m_timeGraph = null;
 
   @Override
@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     Random random = new Random();
     for (int i = 0; i < m_testData.length; i++)
     {
-      m_testData[i] = new TimeGraph.Data((i * 100L) + (Math.abs(random.nextLong()) % 99L), random.nextFloat() * 16.0f);
+      m_testData[i] = new TimeGraph.Data((i * 100L) /*+ (Math.abs(random.nextLong()) % 99L)*/, random.nextFloat() * 16.0f);
     }
 
 
@@ -36,6 +36,14 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
   @Override
   public TimeGraph.Data[] getData(long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp)
   {
+    /*try
+    {
+      Thread.sleep(1000);
+    }
+    catch (InterruptedException e)
+    {
+      e.printStackTrace();
+    }*/
     return m_testData;
   }
 
@@ -43,15 +51,15 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
   public TimeGraph.TimeAxisLabelData[] getLabelsForData(TimeGraph.Data[] data)
   {
     return new TimeGraph.TimeAxisLabelData[] {
-        new TimeGraph.TimeAxisLabelData(0, "A"),
-        new TimeGraph.TimeAxisLabelData(200, "B"),
-        new TimeGraph.TimeAxisLabelData(400, "C"),
-        new TimeGraph.TimeAxisLabelData(600, "D"),
-        new TimeGraph.TimeAxisLabelData(800, "E"),
-        new TimeGraph.TimeAxisLabelData(1000, "F"),
-        new TimeGraph.TimeAxisLabelData(1200, "G"),
-        new TimeGraph.TimeAxisLabelData(1400, "H"),
-        new TimeGraph.TimeAxisLabelData(1600, "I"),
+        new TimeGraph.TimeAxisLabelData(0, "1"),
+        new TimeGraph.TimeAxisLabelData(200, "2"),
+        new TimeGraph.TimeAxisLabelData(400, "3"),
+        new TimeGraph.TimeAxisLabelData(600, "4"),
+        new TimeGraph.TimeAxisLabelData(800, "5"),
+        new TimeGraph.TimeAxisLabelData(1000, "6"),
+        new TimeGraph.TimeAxisLabelData(1200, "7"),
+        new TimeGraph.TimeAxisLabelData(1400, "8"),
+        new TimeGraph.TimeAxisLabelData(1600, "9"),
     };
   }
 }
