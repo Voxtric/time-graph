@@ -58,8 +58,6 @@ public class TimeGraph extends ConstraintLayout
 
   private GraphSurface m_graphSurfaceView = null;
   private float m_xOffset = 0.0f;
-  private float m_minXOffset = 0.0f;
-  private float m_maxXOffset = 0.0f;
   private float m_xScale = 1.0f;
   private float m_normalisedForcedXCentre = -1.0f;
   private LineStrip m_dataLine = null;
@@ -394,8 +392,6 @@ public class TimeGraph extends ConstraintLayout
             }
 
             m_xOffset = 0.0f;
-            m_minXOffset = ((data[0].timestamp - m_startTimestamp - timeDifference) / -floatTimeDifference) - 1.0f + m_overScroll;
-            m_maxXOffset = ((m_endTimestamp + timeDifference - data[data.length - 1].timestamp) / floatTimeDifference) - 1.0f - m_overScroll;
             m_xScale = 1.0f;
             m_beforeScalingStartTimestamp = Long.MIN_VALUE;
             m_beforeScalingEndTimestamp = Long.MAX_VALUE;
@@ -441,20 +437,41 @@ public class TimeGraph extends ConstraintLayout
 
   public void scrollData(float normalisedScrollDelta)
   {
-    if (normalisedScrollDelta > 0.0f)
+    long timeDifference = m_endTimestamp - m_startTimestamp;
+
+    long startToFirstDifference = m_startTimestamp - m_firstDataEntry.timestamp;
+    float normalisedStartToFirstDifference = startToFirstDifference / (float)timeDifference;
+    long endToLastDifference = m_endTimestamp - m_lastDataEntry.timestamp;
+    float normalisedEndToLastDifference = endToLastDifference / (float)timeDifference;
+
+    if (dataFits())
     {
-      normalisedScrollDelta = Math.min(normalisedScrollDelta, m_minXOffset - m_xOffset);
+      if (normalisedScrollDelta > 0.0f)
+      {
+        normalisedScrollDelta = Math.min(normalisedScrollDelta, normalisedStartToFirstDifference);
+      }
+      else
+      {
+        normalisedScrollDelta = Math.max(normalisedScrollDelta, normalisedEndToLastDifference);
+      }
     }
     else
     {
-      normalisedScrollDelta = -Math.min(Math.abs(normalisedScrollDelta), m_xOffset - m_maxXOffset);
+      if (normalisedScrollDelta > 0.0f)
+      {
+        normalisedScrollDelta = Math.min(normalisedScrollDelta, normalisedEndToLastDifference);
+      }
+      else
+      {
+        normalisedScrollDelta = Math.max(normalisedScrollDelta, normalisedStartToFirstDifference);
+      }
     }
 
-    m_xOffset += normalisedScrollDelta;
-
-    long timeChange = (long)((m_endTimestamp - m_startTimestamp) * normalisedScrollDelta);
+    long timeChange = (long)(timeDifference * normalisedScrollDelta);
     m_startTimestamp -= timeChange;
     m_endTimestamp -= timeChange;
+    m_xOffset += normalisedScrollDelta;
+
 
     float pixelMove = normalisedScrollDelta * m_graphSurfaceView.getWidth();
     for (TimeAxisLabel label : m_timeAxisLabels)
@@ -534,13 +551,11 @@ public class TimeGraph extends ConstraintLayout
     m_graphSurfaceView.requestRender();
   }
 
-  private boolean shouldApplyDataBoundaries()
+  private boolean dataFits()
   {
-    long startToFirstDifference = m_firstDataEntry.timestamp - m_startTimestamp;
-    long endToLastDifference = m_endTimestamp - m_lastDataEntry.timestamp;
-    long firstToLastDistance = m_lastDataEntry.timestamp - m_firstDataEntry.timestamp;
-    return (((startToFirstDifference <= 0 && endToLastDifference > 0) || (startToFirstDifference > 0 && endToLastDifference <= 0)) &&
-        (startToFirstDifference < firstToLastDistance && endToLastDifference < firstToLastDistance));
+    long timeDifference = m_endTimestamp - m_startTimestamp;
+    long firstToLastDifference = m_lastDataEntry.timestamp - m_firstDataEntry.timestamp;
+    return firstToLastDifference > timeDifference;
   }
 
   private void applyAttributes(Context context, AttributeSet attrs)

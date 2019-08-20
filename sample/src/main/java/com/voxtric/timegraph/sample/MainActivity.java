@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements TimeGraph.DataAccessor
 {
-  TimeGraph.Data[] m_testData = new TimeGraph.Data[7];
+  TimeGraph.Data[] m_testData = new TimeGraph.Data[8];
   TimeGraph m_timeGraph = null;
 
   @Override
