@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -487,22 +486,13 @@ public class TimeGraph extends ConstraintLayout
 
     m_xScale *= 1.0f + normalisedScaleDelta;
 
-    // TODO: Centre timestamp scaling
-    /*long timeDifference = m_endTimestamp - m_startTimestamp;
-    long timeChange = (long)(((timeDifference * (1.0f + normalisedScaleDelta)) - timeDifference) * 0.5f);
-    m_startTimestamp += timeChange;
-    m_endTimestamp -= timeChange;*/
-
-    long timeDifference = m_beforeScalingEndTimestamp - m_beforeScalingStartTimestamp;
-    long newTimeDifference = (long)(timeDifference * m_xScale);
-    m_startTimestamp = m_beforeScalingStartTimestamp - (long)(newTimeDifference * normalisedXCentre);
-    m_endTimestamp = m_beforeScalingEndTimestamp + (long)(newTimeDifference * (1.0f - normalisedXCentre));
-
+    float timingScale = 1.0f / m_xScale;
+    m_startTimestamp = (long)scaleValue(m_beforeScalingStartTimestamp, m_beforeScalingEndTimestamp, m_beforeScalingStartTimestamp, timingScale, normalisedXCentre);
+    m_endTimestamp = (long)scaleValue(m_beforeScalingStartTimestamp, m_beforeScalingEndTimestamp, m_beforeScalingEndTimestamp, timingScale, normalisedXCentre);
 
     for (TimeAxisLabel label : m_timeAxisLabels)
     {
-      float labelScaledDifference = ((normalisedXCentre * m_graphSurfaceView.getWidth()) - label.offset) * (m_xScale - 1.0f);
-      float labelPosition = label.offset - labelScaledDifference;
+      float labelPosition = (float)scaleValue(0.0, m_graphSurfaceView.getWidth(), label.offset, m_xScale, normalisedXCentre);
       label.view.animate().translationX(labelPosition).setDuration(0).start();
     }
 
@@ -607,6 +597,15 @@ public class TimeGraph extends ConstraintLayout
     return textView;
   }
 
+  private static double scaleValue(double rangeStart, double rangeEnd, double value, double scale, double normalisedScaleFrom)
+  {
+    double rangeSize = rangeEnd - rangeStart;
+    double normalisedValue = (value - rangeStart) / rangeSize;
+    double normalisedValueDistance = normalisedScaleFrom - normalisedValue;
+    double normalisedNewValueDistance = normalisedValueDistance * scale;
+    return rangeStart + (rangeSize * (normalisedScaleFrom - normalisedNewValueDistance));
+  }
+
   private static float dpToPx(Context context, float dp)
   {
     return dp * context.getResources().getDisplayMetrics().density;
@@ -622,7 +621,7 @@ public class TimeGraph extends ConstraintLayout
     long timestamp;
     String label;
 
-    TimeAxisLabelData(long timestamp, String label)
+    public TimeAxisLabelData(long timestamp, String label)
     {
       this.timestamp = timestamp;
       this.label = label;

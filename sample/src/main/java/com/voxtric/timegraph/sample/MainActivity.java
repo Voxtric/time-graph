@@ -19,7 +19,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     Random random = new Random();
     for (int i = 0; i < m_testData.length; i++)
     {
-      m_testData[i] = new TimeGraph.Data((i * 8640000L) + (Math.abs(random.nextLong()) % 8600000L), random.nextFloat() * 16.0f);
+      m_testData[i] = new TimeGraph.Data((i * 100L) + (Math.abs(random.nextLong()) % 99L), random.nextFloat() * 16.0f);
     }
 
 
@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     m_timeGraph = findViewById(R.id.time_graph);
 
     m_timeGraph.setMidValueAxisLabels(new float[] { 4.0f, 8.0f, 12.0f });
-    m_timeGraph.setVisibleDataPeriod(0, 216000000, MainActivity.this);
+    m_timeGraph.setVisibleDataPeriod(0, 1000, MainActivity.this);
   }
 
   @Override
@@ -42,6 +42,16 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
   @Override
   public TimeGraph.TimeAxisLabelData[] getLabelsForData(TimeGraph.Data[] data)
   {
-    return TimeGraph.TimeAxisLabelData.labelDays(data);
+    return new TimeGraph.TimeAxisLabelData[] {
+        new TimeGraph.TimeAxisLabelData(0, "A"),
+        new TimeGraph.TimeAxisLabelData(200, "B"),
+        new TimeGraph.TimeAxisLabelData(400, "C"),
+        new TimeGraph.TimeAxisLabelData(600, "D"),
+        new TimeGraph.TimeAxisLabelData(800, "E"),
+        new TimeGraph.TimeAxisLabelData(1000, "F"),
+        new TimeGraph.TimeAxisLabelData(1200, "G"),
+        new TimeGraph.TimeAxisLabelData(1400, "H"),
+        new TimeGraph.TimeAxisLabelData(1600, "I"),
+    };
   }
 }
