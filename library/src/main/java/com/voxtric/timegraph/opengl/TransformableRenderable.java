@@ -1,6 +1,7 @@
 package com.voxtric.timegraph.opengl;
 
 import android.opengl.GLES20;
+import android.util.Log;
 
 abstract class TransformableRenderable extends Renderable
 {
@@ -50,9 +51,17 @@ abstract class TransformableRenderable extends Renderable
       GLES20.glAttachShader(s_shaderHandle, vertexShaderHandle);
       GLES20.glAttachShader(s_shaderHandle, fragmentShaderHandle);
       GLES20.glLinkProgram(s_shaderHandle);
-
-      GLES20.glUseProgram(s_shaderHandle);
     }
+    GLES20.glUseProgram(s_shaderHandle);
     return s_shaderHandle;
+  }
+
+  static void releaseShader()
+  {
+    if (s_shaderHandle != -1)
+    {
+      GLES20.glDeleteShader(s_shaderHandle);
+    }
+    s_shaderHandle = -1;
   }
 }

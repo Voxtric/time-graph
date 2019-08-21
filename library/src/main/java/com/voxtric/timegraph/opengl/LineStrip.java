@@ -30,5 +30,7 @@ public class LineStrip extends TransformableRenderable
     GLES20.glUniform1f(xScalePositionHandle, m_xScalePosition);
 
     GLES20.glDrawArrays(GLES20.GL_LINE_STRIP, 0, getVertexCount());
+
+    GLES20.glDisableVertexAttribArray(vertexPositionHandle);
   }
 }

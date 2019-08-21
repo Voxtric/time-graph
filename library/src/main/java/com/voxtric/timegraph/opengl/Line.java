@@ -30,5 +30,7 @@ public class Line extends TransformableRenderable
     GLES20.glUniform1f(xScalePositionHandle, m_xScalePosition);
 
     GLES20.glDrawArrays(GLES20.GL_LINES, 0, getVertexCount());
+
+    GLES20.glDisableVertexAttribArray(vertexPositionHandle);
   }
 }

@@ -28,17 +28,33 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     setContentView(R.layout.activity_main);
 
     m_timeGraph = findViewById(R.id.time_graph);
-
-    m_timeGraph.setValueAxisMidLabels(new float[] { 4.0f, 8.0f, 12.0f });
-    m_timeGraph.setVisibleDataPeriod(-500, 500, MainActivity.this);
-
-    m_timeGraph.postDelayed(new Runnable()
+    if (savedInstanceState == null)
     {
-      @Override
-      public void run()
+      m_timeGraph.setValueAxisMidLabels(new float[]{ 4.0f, 8.0f, 12.0f });
+      m_timeGraph.setVisibleDataPeriod(-500, 500, MainActivity.this);
+
+      m_timeGraph.postDelayed(new Runnable()
       {
-      }
-    }, 1000);
+        @Override
+        public void run()
+        {
+        }
+      }, 2000);
+    }
+    else
+    {
+      long startTimestamp = savedInstanceState.getLong("startTimestamp");
+      long endTimestamp = savedInstanceState.getLong("endTimestamp");
+      m_timeGraph.setVisibleDataPeriod(startTimestamp, endTimestamp, this);
+    }
+  }
+
+  @Override
+  protected void onSaveInstanceState(Bundle bundle)
+  {
+    super.onSaveInstanceState(bundle);
+    bundle.putLong("startTimestamp", m_timeGraph.getVisibleStartTimestamp());
+    bundle.putLong("endTimestamp", m_timeGraph.getVisibleEndTimestamp());
   }
 
   @Override

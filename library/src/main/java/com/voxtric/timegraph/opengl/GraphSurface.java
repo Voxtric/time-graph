@@ -4,6 +4,7 @@ import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.view.View;
 
 import com.voxtric.timegraph.TimeGraph;
 
@@ -36,6 +37,14 @@ public class GraphSurface extends GLSurfaceView
     m_renderer = new GraphRenderer();
     setRenderer(m_renderer);
     setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
+  }
+
+  @Override
+  protected void onDetachedFromWindow()
+  {
+    super.onDetachedFromWindow();
+    Renderable.releaseShader();
+    TransformableRenderable.releaseShader();
   }
 
   @Override

@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.os.AsyncTask;
+import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -91,11 +93,11 @@ public class TimeGraph extends ConstraintLayout
   private Data m_lastDataEntry = null;
 
   private RelativeLayout m_timeLabelsLayoutView = null;
-  private ArrayList<TextView> m_valueAxisMidViews = null;
+  private ArrayList<TextView> m_valueAxisMidViews = new ArrayList<>();
 
   private TextView m_valueAxisMinView = null;
   private TextView m_valueAxisMaxView = null;
-  private ArrayList<TimeAxisLabel> m_timeAxisLabels = null;
+  private ArrayList<TimeAxisLabel> m_timeAxisLabels = new ArrayList<>();
 
   public TimeGraph(Context context)
   {
@@ -115,6 +117,77 @@ public class TimeGraph extends ConstraintLayout
     super(context, attrs, defStyleAttr);
     applyAttributes(context, attrs);
     initialise(context);
+  }
+
+  @Override
+  protected Parcelable onSaveInstanceState()
+  {
+    Parcelable superState = super.onSaveInstanceState();
+
+    Bundle state = new Bundle();
+    state.putParcelable("superState", superState);
+
+    state.putBoolean("m_showValueAxis", m_showValueAxis);
+    state.putFloat("m_valueAxisTextSizeSp", m_valueAxisTextSizeSp);
+    state.putInt("m_valueAxisTextColor", m_valueAxisTextColor);
+    state.putFloat("m_valueAxisMin", m_valueAxisMin);
+    state.putFloat("m_valueAxisMax", m_valueAxisMax);
+
+    state.putBoolean("m_showTimeAxis", m_showTimeAxis);
+    state.putFloat("m_timeAxisTextSizeSp", m_timeAxisTextSizeSp);
+    state.putInt("m_timeAxisTextColor", m_timeAxisTextColor);
+
+    state.putBoolean("m_showNoDataText", m_showNoDataText);
+    state.putCharSequence("m_noDataText", m_noDataText);
+    state.putFloat("m_noDataTextSizeSp", m_noDataTextSizeSp);
+    state.putInt("m_noDataTextColor", m_noDataTextColor);
+
+    state.putBoolean("m_showRefreshProgress", m_showRefreshProgress);
+
+    state.putBoolean("m_allowScroll", m_allowScroll);
+    state.putBoolean("m_allowScale", m_allowScale);
+
+    float[] valueAxisMidValues = new float[m_valueAxisMidViews.size()];
+    for (int i = 0; i < valueAxisMidValues.length; i++)
+    {
+      valueAxisMidValues[i] = Float.valueOf(m_valueAxisMidViews.get(i).getText().toString());
+    }
+    state.putFloatArray("valueAxisMidValues", valueAxisMidValues);
+
+    return state;
+  }
+
+  @Override
+  protected void onRestoreInstanceState(Parcelable state)
+  {
+    if (state instanceof Bundle)
+    {
+      Bundle bundle = (Bundle)state;
+      state = bundle.getParcelable("superState");
+
+      setShowValueAxis(bundle.getBoolean("m_showValueAxis"));
+      setValueAxisTextSizeSp(bundle.getFloat("m_valueAxisTextSizeSp"));
+      setValueAxisTextColor(bundle.getInt("m_valueAxisTextColor"));
+      setValueAxisMin(bundle.getFloat("m_valueAxisMin"));
+      setValueAxisMax(bundle.getFloat("m_valueAxisMax"));
+
+      setShowTimeAxis(bundle.getBoolean("m_showTimeAxis"));
+      setTimeAxisTextSizeSp(bundle.getFloat("m_timeAxisTextSizeSp"));
+      setTimeAxisTextColor(bundle.getInt("m_timeAxisTextColor"));
+
+      setShowNoDataText(bundle.getBoolean("m_showNoDataText"));
+      setNoDataText(bundle.getCharSequence("m_noDataText"));
+      setNoDataTextSizeSp(bundle.getFloat("m_noDataTextSizeSp"));
+      setNoDataTextColor(bundle.getInt("m_noDataTextColor"));
+
+      setShowRefreshProgress(bundle.getBoolean("m_showRefreshProgress"));
+
+      setAllowScroll(bundle.getBoolean("m_allowScroll"));
+      setAllowScale(bundle.getBoolean("m_allowScale"));
+
+      setValueAxisMidLabels(bundle.getFloatArray("valueAxisMidValues"));
+    }
+    super.onRestoreInstanceState(state);
   }
 
   public void setShowValueAxis(boolean value)
@@ -329,11 +402,6 @@ public class TimeGraph extends ConstraintLayout
   {
     if (midValues != null)
     {
-      if (m_valueAxisMidViews == null)
-      {
-        m_valueAxisMidViews = new ArrayList<>(midValues.length);
-      }
-
       int index = 0;
       for (; index < midValues.length; index++)
       {
@@ -392,11 +460,6 @@ public class TimeGraph extends ConstraintLayout
         @Override
         public void run()
         {
-          if (m_timeAxisLabels == null)
-          {
-            m_timeAxisLabels = new ArrayList<>(timeAxisLabelData.length);
-          }
-
           double difference = (double)(m_endTimestamp - m_startTimestamp);
           int index = 0;
           for (; index < timeAxisLabelData.length; index++)
@@ -460,6 +523,16 @@ public class TimeGraph extends ConstraintLayout
     m_dataAccessor = dataAccessor;
 
     refresh();
+  }
+
+  public long getVisibleStartTimestamp()
+  {
+    return m_startTimestamp;
+  }
+
+  public long getVisibleEndTimestamp()
+  {
+    return m_endTimestamp;
   }
 
   public void clearData()

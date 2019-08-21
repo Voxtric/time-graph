@@ -47,7 +47,7 @@ public abstract class Renderable
     return m_vertexCount;
   }
 
-  public abstract void draw();
+  abstract void draw();
 
   static int getShaderHandle()
   {
@@ -59,13 +59,21 @@ public abstract class Renderable
       GLES20.glAttachShader(s_shaderHandle, vertexShaderHandle);
       GLES20.glAttachShader(s_shaderHandle, fragmentShaderHandle);
       GLES20.glLinkProgram(s_shaderHandle);
-
-      GLES20.glUseProgram(s_shaderHandle);
     }
+    GLES20.glUseProgram(s_shaderHandle);
     return s_shaderHandle;
   }
 
-  protected static int loadShader(int type, String shaderCode)
+  static void releaseShader()
+  {
+    if (s_shaderHandle != -1)
+    {
+      GLES20.glDeleteShader(s_shaderHandle);
+    }
+    s_shaderHandle = -1;
+  }
+
+  static int loadShader(int type, String shaderCode)
   {
     int shaderHandle = GLES20.glCreateShader(type);
     GLES20.glShaderSource(shaderHandle, shaderCode);
