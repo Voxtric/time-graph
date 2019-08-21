@@ -2,8 +2,10 @@ package com.voxtric.timegraph;
 
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.util.AttributeSet;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -26,23 +28,47 @@ import java.util.Date;
 
 public class TimeGraph extends ConstraintLayout
 {
-  private static final float DEFAULT_MIN_VALUE = 0.0f;
-  private static final float DEFAULT_MAX_VALUE = 100.0f;
-  private static final boolean DEFAULT_SHOW_TIME_AXIS = true;
   private static final boolean DEFAULT_SHOW_VALUE_AXIS = true;
-  private static final boolean DEFAULT_SHOW_REFRESH_PROGRESS = true;
+  private static final float DEFAULT_VALUE_AXIS_TEXT_SIZE_SP = 14.0f;
+  private static final int DEFAULT_VALUE_AXIS_TEXT_COLOR = Color.GRAY;
+  private static final float DEFAULT_VALUE_AXIS_MIN = 0.0f;
+  private static final float DEFAULT_VALUE_AXIS_MAX = 100.0f;
+
+  private static final boolean DEFAULT_SHOW_TIME_AXIS = true;
+  private static final float DEFAULT_TIME_AXIS_TEXT_SIZE_SP = 14.0f;
+  private static final int DEFAULT_TIME_AXIS_TEXT_COLOR = Color.GRAY;
+
   private static final boolean DEFAULT_SHOW_NO_DATA_TEXT = true;
   private static final String DEFAULT_NO_DATA_TEXT = "No Data To Display";
+  private static final float DEFAULT_NO_DATA_TEXT_SIZE_SP = 18.0f;
+  private static final int DEFAULT_NO_DATA_TEXT_COLOR = Color.BLACK;
+
+  private static final boolean DEFAULT_SHOW_REFRESH_PROGRESS = true;
+
+  private static final boolean DEFAULT_ALLOW_SCROLL = true;
+  private static final boolean DEFAULT_ALLOW_SCALE = true;
 
   private static final float VALUE_AXIS_MARGIN_DP = 4.0f;
 
-  private float m_minValue = DEFAULT_MIN_VALUE;
-  private float m_maxValue = DEFAULT_MAX_VALUE;
-  private boolean m_showTimeAxis = DEFAULT_SHOW_TIME_AXIS;
   private boolean m_showValueAxis = DEFAULT_SHOW_VALUE_AXIS;
-  private boolean m_showRefreshProgress = DEFAULT_SHOW_REFRESH_PROGRESS;
+  private float m_valueAxisTextSizeSp = DEFAULT_VALUE_AXIS_TEXT_SIZE_SP;
+  private int m_valueAxisTextColor = DEFAULT_VALUE_AXIS_TEXT_COLOR;
+  private float m_valueAxisMin = DEFAULT_VALUE_AXIS_MIN;
+  private float m_valueAxisMax = DEFAULT_VALUE_AXIS_MAX;
+
+  private boolean m_showTimeAxis = DEFAULT_SHOW_TIME_AXIS;
+  private float m_timeAxisTextSizeSp = DEFAULT_TIME_AXIS_TEXT_SIZE_SP;
+  private int m_timeAxisTextColor = DEFAULT_TIME_AXIS_TEXT_COLOR;
+
   private boolean m_showNoDataText = DEFAULT_SHOW_NO_DATA_TEXT;
   private CharSequence m_noDataText = DEFAULT_NO_DATA_TEXT;
+  private float m_noDataTextSizeSp = DEFAULT_NO_DATA_TEXT_SIZE_SP;
+  private int m_noDataTextColor = DEFAULT_NO_DATA_TEXT_COLOR;
+
+  private boolean m_showRefreshProgress = DEFAULT_SHOW_REFRESH_PROGRESS;
+
+  private boolean m_allowScroll = DEFAULT_ALLOW_SCROLL;
+  private boolean m_allowScale = DEFAULT_ALLOW_SCALE;
 
   private long m_startTimestamp = 0L;
   private long m_endTimestamp = 0L;
@@ -65,10 +91,10 @@ public class TimeGraph extends ConstraintLayout
   private Data m_lastDataEntry = null;
 
   private RelativeLayout m_timeLabelsLayoutView = null;
-  private ArrayList<TextView> m_midValueViews = null;
+  private ArrayList<TextView> m_valueAxisMidViews = null;
 
-  private TextView m_minValueView = null;
-  private TextView m_maxValueView = null;
+  private TextView m_valueAxisMinView = null;
+  private TextView m_valueAxisMaxView = null;
   private ArrayList<TimeAxisLabel> m_timeAxisLabels = null;
 
   public TimeGraph(Context context)
@@ -91,26 +117,91 @@ public class TimeGraph extends ConstraintLayout
     initialise(context);
   }
 
-  public void setMinValue(float value)
+  public void setShowValueAxis(boolean value)
   {
-    m_minValue = value;
-    m_minValueView.setText(String.valueOf(value));
+    m_showValueAxis = value;
+    int visibility = value ? View.VISIBLE : View.GONE;
+
+    m_valueAxisMinView.setVisibility(visibility);
+    m_valueAxisMaxView.setVisibility(visibility);
+    for (TextView view : m_valueAxisMidViews)
+    {
+      view.setVisibility(visibility);
+    }
+
+    ConstraintSet constraintSet = new ConstraintSet();
+    constraintSet.clone(this);
+    if (value)
+    {
+      constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.LEFT,
+                            m_valueAxisMaxView.getId(), ConstraintSet.RIGHT,
+                            dpToPx(getContext(), VALUE_AXIS_MARGIN_DP));
+    }
+    else
+    {
+      constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.LEFT,
+                            m_valueAxisMaxView.getId(), ConstraintSet.RIGHT, 0);
+    }
+    constraintSet.applyTo(this);
   }
 
-  public float getMinValue()
+  public boolean getShowValueAxis()
   {
-    return m_minValue;
+    return m_showValueAxis;
   }
 
-  public void setMaxValue(float value)
+  public void setValueAxisTextSizeSp(float textSizeSp)
   {
-    m_maxValue = value;
-    m_maxValueView.setText(String.valueOf(value));
+    m_valueAxisTextSizeSp = textSizeSp;
+    m_valueAxisMinView.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp);
+    m_valueAxisMaxView.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp);
+    for (TextView view : m_valueAxisMidViews)
+    {
+      view.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp);
+    }
   }
 
-  public float getMaxValue()
+  public float getValueAxisTextSizeSp()
   {
-    return m_maxValue;
+    return m_valueAxisTextSizeSp;
+  }
+
+  public void setValueAxisTextColor(int color)
+  {
+    m_valueAxisTextColor = color;
+    m_valueAxisMinView.setTextColor(color);
+    m_valueAxisMaxView.setTextColor(color);
+    for (TextView view : m_valueAxisMidViews)
+    {
+      view.setTextColor(color);
+    }
+  }
+
+  public int getValueAxisTextColor(int color)
+  {
+    return m_valueAxisTextColor;
+  }
+
+  public void setValueAxisMin(float value)
+  {
+    m_valueAxisMin = value;
+    m_valueAxisMinView.setText(String.valueOf(value));
+  }
+
+  public float getValueAxisMin()
+  {
+    return m_valueAxisMin;
+  }
+
+  public void setValueAxisMax(float value)
+  {
+    m_valueAxisMax = value;
+    m_valueAxisMaxView.setText(String.valueOf(value));
+  }
+
+  public float getValueAxisMax()
+  {
+    return m_valueAxisMax;
   }
 
   public void setShowTimeAxis(boolean value)
@@ -124,37 +215,83 @@ public class TimeGraph extends ConstraintLayout
     return m_showTimeAxis;
   }
 
-  public void setShowValueAxis(boolean value)
+  public void setTimeAxisTextSizeSp(float textSizeSp)
   {
-    m_showValueAxis = value;
-    int visibility = value ? View.VISIBLE : View.GONE;
-
-    m_minValueView.setVisibility(visibility);
-    m_maxValueView.setVisibility(visibility);
-    for (TextView view : m_midValueViews)
+    m_timeAxisTextSizeSp = textSizeSp;
+    for (TimeAxisLabel label : m_timeAxisLabels)
     {
-      view.setVisibility(visibility);
+      label.view.setTextSize(TypedValue.COMPLEX_UNIT_SP, textSizeSp);
     }
-
-    ConstraintSet constraintSet = new ConstraintSet();
-    constraintSet.clone(this);
-    if (value)
-    {
-      constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.LEFT,
-                            m_maxValueView.getId(), ConstraintSet.RIGHT,
-                            (int)dpToPx(getContext(), VALUE_AXIS_MARGIN_DP));
-    }
-    else
-    {
-      constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.LEFT,
-                            m_maxValueView.getId(), ConstraintSet.RIGHT, 0);
-    }
-    constraintSet.applyTo(this);
   }
 
-  public boolean getShowValueAxis()
+  public float getTimeAxisTextSizeSp()
   {
-    return m_showValueAxis;
+    return m_timeAxisTextSizeSp;
+  }
+
+  public void setTimeAxisTextColor(int color)
+  {
+    m_timeAxisTextColor = color;
+    for (TimeAxisLabel label : m_timeAxisLabels)
+    {
+      label.view.setTextColor(color);
+    }
+  }
+
+  public int getTimeAxisTextColor(int color)
+  {
+    return m_timeAxisTextColor;
+  }
+
+  public void setShowNoDataText(boolean value)
+  {
+    m_showNoDataText = value;
+    if (!value)
+    {
+      m_noDataView.setVisibility(View.INVISIBLE);
+    }
+    else if (m_endTimestamp - m_startTimestamp == 0L)
+    {
+      m_noDataView.setVisibility(View.VISIBLE);
+    }
+  }
+
+  public boolean getShowNoDataText()
+  {
+    return m_showNoDataText;
+  }
+
+  public void setNoDataText(CharSequence text)
+  {
+    m_noDataText = text;
+    m_noDataView.setText(text);
+  }
+
+  public CharSequence getNoDataText()
+  {
+    return m_noDataText;
+  }
+
+  public void setNoDataTextSizeSp(float textSizeSp)
+  {
+    m_noDataTextSizeSp = textSizeSp;
+    m_noDataView.setTextSize(textSizeSp);
+  }
+
+  public float getNoDataTextSizeSp()
+  {
+    return m_timeAxisTextSizeSp;
+  }
+
+  public void setNoDataTextColor(int color)
+  {
+    m_noDataTextColor = color;
+    m_noDataView.setTextColor(color);
+  }
+
+  public int getNoDataTextColor(int color)
+  {
+    return m_noDataTextColor;
   }
 
   public void setShowRefreshProgress(boolean value)
@@ -166,6 +303,84 @@ public class TimeGraph extends ConstraintLayout
   public boolean getShowRefreshProgress()
   {
     return m_showRefreshProgress;
+  }
+
+  public void setAllowScroll(boolean allow)
+  {
+    m_allowScroll = allow;
+  }
+
+  public boolean getAllowScroll()
+  {
+    return m_allowScroll;
+  }
+
+  public void setAllowScale(boolean allow)
+  {
+    m_allowScale = allow;
+  }
+
+  public boolean getAllowScale()
+  {
+    return m_allowScale;
+  }
+
+  public void setValueAxisMidLabels(final float[] midValues)
+  {
+    if (midValues != null)
+    {
+      if (m_valueAxisMidViews == null)
+      {
+        m_valueAxisMidViews = new ArrayList<>(midValues.length);
+      }
+
+      int index = 0;
+      for (; index < midValues.length; index++)
+      {
+        if (midValues[index] < m_valueAxisMin)
+        {
+          throw new IllegalArgumentException("'midValues' array must not contain values lower than the minimum.");
+        }
+        if (midValues[index] > m_valueAxisMax)
+        {
+          throw new IllegalArgumentException("'midValues' array must not contain values greater than the maximum.");
+        }
+
+        TextView textView;
+        if (index >= m_valueAxisMidViews.size())
+        {
+          textView = createTextView(getContext(), m_valueAxisTextSizeSp, m_valueAxisTextColor);
+          addView(textView);
+          m_valueAxisMidViews.add(textView);
+        }
+        else
+        {
+          textView = m_valueAxisMidViews.get(index);
+          if (textView == null)
+          {
+            textView = createTextView(getContext(), m_valueAxisTextSizeSp, m_valueAxisTextColor);
+            addView(textView);
+            m_valueAxisMidViews.set(index, textView);
+          }
+        }
+
+        textView.setText(String.valueOf(midValues[index]));
+        ConstraintSet constraintSet = new ConstraintSet();
+        constraintSet.clone(TimeGraph.this);
+        constraintSet.connect(textView.getId(), ConstraintSet.RIGHT, m_valueAxisMaxView.getId(), ConstraintSet.RIGHT);
+        constraintSet.connect(textView.getId(), ConstraintSet.TOP, m_graphSurfaceView.getId(), ConstraintSet.TOP);
+        constraintSet.connect(textView.getId(), ConstraintSet.BOTTOM, m_graphSurfaceView.getId(), ConstraintSet.BOTTOM);
+        constraintSet.setHorizontalBias(textView.getId(), 1.0f);
+        constraintSet.setVerticalBias(textView.getId(), (m_valueAxisMax - midValues[index]) / (m_valueAxisMax - m_valueAxisMin));
+        constraintSet.applyTo(TimeGraph.this);
+      }
+
+      for (int i = m_valueAxisMidViews.size() - 1; i >= index; i--)
+      {
+        removeView(m_valueAxisMidViews.get(i));
+        m_valueAxisMidViews.remove(i);
+      }
+    }
   }
 
   public void setTimeAxisLabels(final TimeAxisLabelData[] timeAxisLabelData)
@@ -190,9 +405,9 @@ public class TimeGraph extends ConstraintLayout
             TimeAxisLabel timeAxisLabel;
             if (index >= m_timeAxisLabels.size())
             {
-              timeAxisLabel = new TimeAxisLabel(createTextView(getContext()));
+              timeAxisLabel = new TimeAxisLabel(createTextView(getContext(), m_timeAxisTextSizeSp, m_timeAxisTextColor));
               timeAxisLabel.view.setBackgroundResource(R.drawable.label_border);
-              timeAxisLabel.view.setPadding((int)dpToPx(getContext(), 3), 0, 0, 0);
+              timeAxisLabel.view.setPadding(dpToPx(getContext(), 3), 0, 0, 0);
               m_timeLabelsLayoutView.addView(timeAxisLabel.view);
               m_timeAxisLabels.add(timeAxisLabel);
             }
@@ -201,9 +416,9 @@ public class TimeGraph extends ConstraintLayout
               timeAxisLabel = m_timeAxisLabels.get(index);
               if (timeAxisLabel == null)
               {
-                timeAxisLabel = new TimeAxisLabel(createTextView(getContext()));
+                timeAxisLabel = new TimeAxisLabel(createTextView(getContext(), m_timeAxisTextSizeSp, m_timeAxisTextColor));
                 timeAxisLabel.view.setBackgroundResource(R.drawable.label_border);
-                timeAxisLabel.view.setPadding((int)dpToPx(getContext(), 3), 0, 0, 0);
+                timeAxisLabel.view.setPadding(dpToPx(getContext(), 3), 0, 0, 0);
                 m_timeLabelsLayoutView.addView(timeAxisLabel.view);
               }
             }
@@ -219,7 +434,7 @@ public class TimeGraph extends ConstraintLayout
             {
               m_graphSurfaceView.removeRenderable(timeAxisLabel.marker);
             }
-            float markerX = (((offset / m_graphSurfaceView.getWidth()) * 2.0f) - 1.0f) + 0.003f;
+            float markerX = (((offset / m_graphSurfaceView.getWidth()) * 2.0f) - 1.0f) + 0.0015f;
             timeAxisLabel.marker = m_graphSurfaceView.addLine(markerX, -1.0f, markerX, -0.9f);
           }
 
@@ -235,64 +450,6 @@ public class TimeGraph extends ConstraintLayout
           }
         }
       });
-    }
-  }
-
-  public void setMidValueAxisLabels(final float[] midValues)
-  {
-    if (midValues != null)
-    {
-      if (m_midValueViews == null)
-      {
-        m_midValueViews = new ArrayList<>(midValues.length);
-      }
-
-      int index = 0;
-      for (; index < midValues.length; index++)
-      {
-        if (midValues[index] < m_minValue)
-        {
-          throw new IllegalArgumentException("'midValues' array must not contain values lower than the minimum.");
-        }
-        if (midValues[index] > m_maxValue)
-        {
-          throw new IllegalArgumentException("'midValues' array must not contain values greater than the maximum.");
-        }
-
-        TextView textView;
-        if (index >= m_midValueViews.size())
-        {
-          textView = createTextView(getContext());
-          addView(textView);
-          m_midValueViews.add(textView);
-        }
-        else
-        {
-          textView = m_midValueViews.get(index);
-          if (textView == null)
-          {
-            textView = createTextView(getContext());
-            addView(textView);
-            m_midValueViews.set(index, textView);
-          }
-        }
-
-        textView.setText(String.valueOf(midValues[index]));
-        ConstraintSet constraintSet = new ConstraintSet();
-        constraintSet.clone(TimeGraph.this);
-        constraintSet.connect(textView.getId(), ConstraintSet.RIGHT, m_maxValueView.getId(), ConstraintSet.RIGHT);
-        constraintSet.connect(textView.getId(), ConstraintSet.TOP, m_graphSurfaceView.getId(), ConstraintSet.TOP);
-        constraintSet.connect(textView.getId(), ConstraintSet.BOTTOM, m_graphSurfaceView.getId(), ConstraintSet.BOTTOM);
-        constraintSet.setHorizontalBias(textView.getId(), 1.0f);
-        constraintSet.setVerticalBias(textView.getId(), (m_maxValue - midValues[index]) / (m_maxValue - m_minValue));
-        constraintSet.applyTo(TimeGraph.this);
-      }
-
-      for (int i = m_midValueViews.size() - 1; i >= index; i--)
-      {
-        removeView(m_midValueViews.get(i));
-        m_midValueViews.remove(i);
-      }
     }
   }
 
@@ -356,7 +513,7 @@ public class TimeGraph extends ConstraintLayout
         @Override
         public void run()
         {
-          float valueDifference = m_maxValue - m_minValue;
+          float valueDifference = m_valueAxisMax - m_valueAxisMin;
           if (m_dataLine != null)
           {
             m_graphSurfaceView.removeRenderable(m_dataLine);
@@ -395,7 +552,7 @@ public class TimeGraph extends ConstraintLayout
               for (Data datum : data)
               {
                 float xCoord = 1.0f - (m_endTimestamp - datum.timestamp) / floatTimeDifference;
-                float yCoord = (m_maxValue - datum.value) / valueDifference;
+                float yCoord = (m_valueAxisMax - datum.value) / valueDifference;
                 coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
                 coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
                 coordsIndex += 2;
@@ -448,67 +605,70 @@ public class TimeGraph extends ConstraintLayout
 
   public void scrollData(float normalisedScrollDelta)
   {
-    long timeDifference = m_endTimestamp - m_startTimestamp;
-
-    long startToFirstDifference = m_startTimestamp - m_firstDataEntry.timestamp;
-    float normalisedStartToFirstDifference = startToFirstDifference / (float)timeDifference;
-    long endToLastDifference = m_endTimestamp - m_lastDataEntry.timestamp;
-    float normalisedEndToLastDifference = endToLastDifference / (float)timeDifference;
-
-    if (dataFits())
+    if (m_allowScroll)
     {
-      if (normalisedScrollDelta > 0.0f)
+      long timeDifference = m_endTimestamp - m_startTimestamp;
+
+      long startToFirstDifference = m_startTimestamp - m_firstDataEntry.timestamp;
+      float normalisedStartToFirstDifference = startToFirstDifference / (float)timeDifference;
+      long endToLastDifference = m_endTimestamp - m_lastDataEntry.timestamp;
+      float normalisedEndToLastDifference = endToLastDifference / (float)timeDifference;
+
+      if (dataFits())
       {
-        normalisedScrollDelta = Math.min(normalisedScrollDelta, normalisedStartToFirstDifference);
+        if (normalisedScrollDelta > 0.0f)
+        {
+          normalisedScrollDelta = Math.min(normalisedScrollDelta, normalisedStartToFirstDifference);
+        }
+        else
+        {
+          normalisedScrollDelta = Math.max(normalisedScrollDelta, normalisedEndToLastDifference);
+        }
       }
       else
       {
-        normalisedScrollDelta = Math.max(normalisedScrollDelta, normalisedEndToLastDifference);
+        if (normalisedScrollDelta > 0.0f)
+        {
+          normalisedScrollDelta = Math.min(normalisedScrollDelta, normalisedEndToLastDifference);
+        }
+        else
+        {
+          normalisedScrollDelta = Math.max(normalisedScrollDelta, normalisedStartToFirstDifference);
+        }
       }
-    }
-    else
-    {
-      if (normalisedScrollDelta > 0.0f)
+
+      long timeChange = (long)(timeDifference * normalisedScrollDelta);
+      m_startTimestamp -= timeChange;
+      m_endTimestamp -= timeChange;
+
+      normalisedScrollDelta = timeChange / (float)timeDifference; // Take into account rounding errors.
+      m_xOffset += normalisedScrollDelta;
+
+      float pixelMove = normalisedScrollDelta * m_graphSurfaceView.getWidth();
+      for (TimeAxisLabel label : m_timeAxisLabels)
       {
-        normalisedScrollDelta = Math.min(normalisedScrollDelta, normalisedEndToLastDifference);
+        label.view.animate().translationXBy(pixelMove).setDuration(0).start();
+        label.offset += pixelMove;
       }
-      else
+
+      if (m_dataLine != null)
       {
-        normalisedScrollDelta = Math.max(normalisedScrollDelta, normalisedStartToFirstDifference);
+        m_dataLine.setXOffset(m_xOffset * 2.0f);
       }
-    }
-
-    long timeChange = (long)(timeDifference * normalisedScrollDelta);
-    m_startTimestamp -= timeChange;
-    m_endTimestamp -= timeChange;
-
-    normalisedScrollDelta = timeChange / (float)timeDifference; // Take into account rounding errors.
-    m_xOffset += normalisedScrollDelta;
-
-    float pixelMove = normalisedScrollDelta * m_graphSurfaceView.getWidth();
-    for (TimeAxisLabel label : m_timeAxisLabels)
-    {
-      label.view.animate().translationXBy(pixelMove).setDuration(0).start();
-      label.offset += pixelMove;
-    }
-
-    if (m_dataLine != null)
-    {
-      m_dataLine.setXOffset(m_xOffset * 2.0f);
-    }
-    for (TimeAxisLabel label : m_timeAxisLabels)
-    {
-      if (label.marker != null)
+      for (TimeAxisLabel label : m_timeAxisLabels)
       {
-        label.marker.setXOffset(m_xOffset * 2.0f);
+        if (label.marker != null)
+        {
+          label.marker.setXOffset(m_xOffset * 2.0f);
+        }
       }
+      m_graphSurfaceView.requestRender();
     }
-    m_graphSurfaceView.requestRender();
   }
 
   public void scaleData(float normalisedScaleDelta, float normalisedXCentre)
   {
-    if (dataFits() || normalisedScaleDelta > 0.0f)
+    if (m_allowScale && (dataFits() || normalisedScaleDelta > 0.0f))
     {
       if (m_normalisedForcedXCentre != -1.0f)
       {
@@ -594,19 +754,31 @@ public class TimeGraph extends ConstraintLayout
     TypedArray attributes = context.getTheme().obtainStyledAttributes(attrs, R.styleable.TimeGraph, 0, 0);
     try
     {
-      m_minValue = attributes.getFloat(R.styleable.TimeGraph_minValue, DEFAULT_MIN_VALUE);
-      m_maxValue = attributes.getFloat(R.styleable.TimeGraph_maxValue, DEFAULT_MAX_VALUE);
-      m_showTimeAxis = attributes.getBoolean(R.styleable.TimeGraph_showTimeAxis, DEFAULT_SHOW_TIME_AXIS);
       m_showValueAxis = attributes.getBoolean(R.styleable.TimeGraph_showValueAxis, DEFAULT_SHOW_VALUE_AXIS);
-      m_showRefreshProgress = attributes.getBoolean(R.styleable.TimeGraph_showRefreshProgress, DEFAULT_SHOW_REFRESH_PROGRESS);
+      m_valueAxisTextSizeSp = attributes.getDimension(R.styleable.TimeGraph_valueAxis_textSize, DEFAULT_VALUE_AXIS_TEXT_SIZE_SP);
+      m_valueAxisTextColor = attributes.getColor(R.styleable.TimeGraph_valueAxis_textColor, DEFAULT_VALUE_AXIS_TEXT_COLOR);
+      m_valueAxisMin = attributes.getFloat(R.styleable.TimeGraph_valueAxis_min, DEFAULT_VALUE_AXIS_MIN);
+      m_valueAxisMax = attributes.getFloat(R.styleable.TimeGraph_valueAxis_max, DEFAULT_VALUE_AXIS_MAX);
+
+      m_showTimeAxis = attributes.getBoolean(R.styleable.TimeGraph_showTimeAxis, DEFAULT_SHOW_TIME_AXIS);
+      m_timeAxisTextSizeSp = attributes.getDimension(R.styleable.TimeGraph_timeAxis_textSize, DEFAULT_TIME_AXIS_TEXT_SIZE_SP);
+      m_timeAxisTextColor = attributes.getColor(R.styleable.TimeGraph_timeAxis_textColor, DEFAULT_TIME_AXIS_TEXT_COLOR);
+
       m_showNoDataText = attributes.getBoolean(R.styleable.TimeGraph_showNoDataText, DEFAULT_SHOW_NO_DATA_TEXT);
-      m_noDataText = attributes.getText(R.styleable.TimeGraph_noDataText);
+      m_noDataText = attributes.getText(R.styleable.TimeGraph_noData_text);
       if (m_noDataText == null)
       {
         m_noDataText = DEFAULT_NO_DATA_TEXT;
       }
+      m_noDataTextSizeSp = attributes.getDimension(R.styleable.TimeGraph_noData_textSize, DEFAULT_NO_DATA_TEXT_SIZE_SP);
+      m_noDataTextColor = attributes.getColor(R.styleable.TimeGraph_noData_textColor, DEFAULT_NO_DATA_TEXT_COLOR);
 
-      if (m_minValue > m_maxValue)
+      m_showRefreshProgress = attributes.getBoolean(R.styleable.TimeGraph_showRefreshProgress, DEFAULT_SHOW_REFRESH_PROGRESS);
+
+      m_allowScroll = attributes.getBoolean(R.styleable.TimeGraph_allowScroll, DEFAULT_ALLOW_SCROLL);
+      m_allowScale = attributes.getBoolean(R.styleable.TimeGraph_allowScale, DEFAULT_ALLOW_SCALE);
+
+      if (m_valueAxisMin > m_valueAxisMax)
       {
         throw new IllegalArgumentException("Minimum value cannot be greater than maximum value.");
       }
@@ -628,15 +800,19 @@ public class TimeGraph extends ConstraintLayout
     m_timeLabelsLayoutView.setId(R.id.time_labels_layout);
     addView(m_timeLabelsLayoutView);
 
-    m_minValueView = new TextView(context);
-    m_minValueView.setId(R.id.min_value);
-    m_minValueView.setText(String.valueOf(m_minValue));
-    addView(m_minValueView);
+    m_valueAxisMinView = new TextView(context);
+    m_valueAxisMinView.setId(R.id.min_value);
+    m_valueAxisMinView.setText(String.valueOf(m_valueAxisMin));
+    m_valueAxisMinView.setTextSize(m_valueAxisTextSizeSp);
+    m_valueAxisMinView.setTextColor(m_valueAxisTextColor);
+    addView(m_valueAxisMinView);
 
-    m_maxValueView = new TextView(context);
-    m_maxValueView.setId(R.id.max_value);
-    m_maxValueView.setText(String.valueOf(m_maxValue));
-    addView(m_maxValueView);
+    m_valueAxisMaxView = new TextView(context);
+    m_valueAxisMaxView.setId(R.id.max_value);
+    m_valueAxisMaxView.setText(String.valueOf(m_valueAxisMax));
+    m_valueAxisMaxView.setTextSize(m_valueAxisTextSizeSp);
+    m_valueAxisMaxView.setTextColor(m_valueAxisTextColor);
+    addView(m_valueAxisMaxView);
 
     m_refreshProgressView = new ProgressBar(context);
     m_refreshProgressView.setId(R.id.refresh_progress);
@@ -646,6 +822,8 @@ public class TimeGraph extends ConstraintLayout
     m_noDataView.setId(R.id.no_data);
     m_noDataView.setGravity(Gravity.CENTER);
     m_noDataView.setText(m_noDataText);
+    m_noDataView.setTextSize(m_noDataTextSizeSp);
+    m_noDataView.setTextColor(m_noDataTextColor);
     addView(m_noDataView);
 
     ConstraintSet constraintSet = new ConstraintSet();
@@ -658,8 +836,8 @@ public class TimeGraph extends ConstraintLayout
     }
     if (!m_showValueAxis)
     {
-      m_minValueView.setVisibility(View.GONE);
-      m_maxValueView.setVisibility(View.GONE);
+      m_valueAxisMinView.setVisibility(View.GONE);
+      m_valueAxisMaxView.setVisibility(View.GONE);
     }
     m_refreshProgressView.setVisibility(View.INVISIBLE);
     if (!m_showNoDataText)
@@ -668,10 +846,12 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  private static TextView createTextView(Context context)
+  private static TextView createTextView(Context context, float textSize, int textColor)
   {
     TextView textView = new TextView(context);
     textView.setId(View.generateViewId());
+    textView.setTextSize(textSize);
+    textView.setTextColor(textColor);
     return textView;
   }
 
@@ -684,9 +864,9 @@ public class TimeGraph extends ConstraintLayout
     return rangeStart + (rangeSize * (normalisedScaleFrom - normalisedNewValueDistance));
   }
 
-  private static float dpToPx(Context context, float dp)
+  private static int dpToPx(Context context, float dp)
   {
-    return dp * context.getResources().getDisplayMetrics().density;
+    return (int)(dp * context.getResources().getDisplayMetrics().density);
   }
 
   private static float pxToDp(Context context, float px)

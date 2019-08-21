@@ -1,12 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <declare-styleable name="TimeGraph">
-        <attr name="minValue" format="float"/>
-        <attr name="maxValue" format="float"/>
-        <attr name="showTimeAxis" format="boolean"/>
         <attr name="showValueAxis" format="boolean"/>
-        <attr name="showRefreshProgress" format="boolean"/>
+        <attr name="valueAxis_textSize" format="dimension"/>
+        <attr name="valueAxis_textColor" format="color"/>
+        <attr name="valueAxis_min" format="float"/>
+        <attr name="valueAxis_max" format="float"/>
+
+        <attr name="showTimeAxis" format="boolean"/>
+        <attr name="timeAxis_textSize" format="dimension"/>
+        <attr name="timeAxis_textColor" format="color"/>
+
         <attr name="showNoDataText" format="boolean"/>
-        <attr name="noDataText" format="string"/>
+        <attr name="noData_text" format="string"/>
+        <attr name="noData_textSize" format="dimension"/>
+        <attr name="noData_textColor" format="color"/>
+
+        <attr name="showRefreshProgress" format="boolean"/>
+
+        <attr name="allowScroll" format="boolean"/>
+        <attr name="allowScale" format="boolean"/>
     </declare-styleable>
 </resources>

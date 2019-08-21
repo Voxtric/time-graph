@@ -29,21 +29,29 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
 
     m_timeGraph = findViewById(R.id.time_graph);
 
-    m_timeGraph.setMidValueAxisLabels(new float[] { 4.0f, 8.0f, 12.0f });
+    m_timeGraph.setValueAxisMidLabels(new float[] { 4.0f, 8.0f, 12.0f });
     m_timeGraph.setVisibleDataPeriod(-500, 500, MainActivity.this);
+
+    m_timeGraph.postDelayed(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+      }
+    }, 1000);
   }
 
   @Override
   public TimeGraph.Data[] getData(long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp)
   {
-    try
+    /*try
     {
       Thread.sleep(1000);
     }
     catch (InterruptedException e)
     {
       e.printStackTrace();
-    }
+    }*/
     return m_testData;
   }
 
