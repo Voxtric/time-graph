@@ -467,8 +467,9 @@ public class TimeGraph extends ConstraintLayout
     long timeChange = (long)(timeDifference * normalisedScrollDelta);
     m_startTimestamp -= timeChange;
     m_endTimestamp -= timeChange;
-    m_xOffset += normalisedScrollDelta;
 
+    normalisedScrollDelta = timeChange / (float)timeDifference; // Take into account rounding errors.
+    m_xOffset += normalisedScrollDelta;
 
     float pixelMove = normalisedScrollDelta * m_graphSurfaceView.getWidth();
     for (TimeAxisLabel label : m_timeAxisLabels)
