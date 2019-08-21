@@ -348,7 +348,6 @@ public class TimeGraph extends ConstraintLayout
       @Override
       public void run()
       {
-        float floatTimeDifference = (float)timeDifference;
         float valueDifference = m_maxValue - m_minValue;
         if (m_dataLine != null)
         {
@@ -367,7 +366,17 @@ public class TimeGraph extends ConstraintLayout
             m_firstDataEntry = data[0];
             m_lastDataEntry = data[data.length - 1];
             setTimeAxisLabels(m_dataAccessor.getLabelsForData(data));
-
+            float floatTimeDifference = (float)timeDifference;
+            if (m_firstDataEntry.timestamp > m_startTimestamp)
+            {
+              m_startTimestamp = m_firstDataEntry.timestamp;
+              floatTimeDifference = (float)(m_endTimestamp - m_startTimestamp);
+            }
+            if (m_lastDataEntry.timestamp < m_endTimestamp)
+            {
+              m_endTimestamp = m_lastDataEntry.timestamp;
+              floatTimeDifference = (float)(m_endTimestamp - m_startTimestamp);
+            }
             float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
             int coordsIndex = 0;
             for (Data datum : data)

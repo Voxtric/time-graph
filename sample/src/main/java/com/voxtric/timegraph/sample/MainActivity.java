@@ -30,7 +30,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     m_timeGraph = findViewById(R.id.time_graph);
 
     m_timeGraph.setMidValueAxisLabels(new float[] { 4.0f, 8.0f, 12.0f });
-    m_timeGraph.setVisibleDataPeriod(0, 1000, MainActivity.this);
+    m_timeGraph.setVisibleDataPeriod(-500, 500, MainActivity.this);
   }
 
   @Override
