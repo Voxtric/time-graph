@@ -51,6 +51,7 @@ public class TimeGraph extends ConstraintLayout
   private DataAccessor m_dataAccessor = null;
 
   private boolean m_refreshing = false;
+  private boolean m_newRefreshRequested = false;
   private ProgressBar m_refreshProgressView = null;
   private TextView m_noDataView = null;
 
@@ -329,90 +330,103 @@ public class TimeGraph extends ConstraintLayout
 
   private void createNewDataLineStrip(final long timeDifference)
   {
-    m_refreshing = true;
-    post(new Runnable()
+    if (m_refreshing)
     {
-      @Override
-      public void run()
-      {
-        if (m_showRefreshProgress)
-        {
-          m_refreshProgressView.setVisibility(View.VISIBLE);
-        }
-        m_noDataView.setVisibility(View.INVISIBLE);
-      }
-    });
-
-    AsyncTask.execute(new Runnable()
+      m_newRefreshRequested = true;
+    }
+    else
     {
-      @Override
-      public void run()
+      m_refreshing = true;
+      m_newRefreshRequested = true;
+      post(new Runnable()
       {
-        float valueDifference = m_maxValue - m_minValue;
-        if (m_dataLine != null)
+        @Override
+        public void run()
         {
-          m_graphSurfaceView.removeRenderable(m_dataLine);
-        }
-
-        Data[] data = null;
-        if (m_dataAccessor != null)
-        {
-          data = m_dataAccessor.getData(m_startTimestamp - timeDifference,
-                                               m_endTimestamp + timeDifference,
-                                               m_startTimestamp,
-                                               m_endTimestamp);
-          if (data != null && data.length > 0)
+          if (m_showRefreshProgress)
           {
-            m_firstDataEntry = data[0];
-            m_lastDataEntry = data[data.length - 1];
-            setTimeAxisLabels(m_dataAccessor.getLabelsForData(data));
-            float floatTimeDifference = (float)timeDifference;
-            if (m_firstDataEntry.timestamp > m_startTimestamp)
+            m_refreshProgressView.setVisibility(View.VISIBLE);
+          }
+          m_noDataView.setVisibility(View.INVISIBLE);
+        }
+      });
+
+      AsyncTask.execute(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          float valueDifference = m_maxValue - m_minValue;
+          if (m_dataLine != null)
+          {
+            m_graphSurfaceView.removeRenderable(m_dataLine);
+          }
+
+          Data[] data = null;
+          if (m_dataAccessor != null)
+          {
+            while (m_newRefreshRequested)
             {
-              m_startTimestamp = m_firstDataEntry.timestamp;
-              floatTimeDifference = (float)(m_endTimestamp - m_startTimestamp);
-            }
-            if (m_lastDataEntry.timestamp < m_endTimestamp)
-            {
-              m_endTimestamp = m_lastDataEntry.timestamp;
-              floatTimeDifference = (float)(m_endTimestamp - m_startTimestamp);
-            }
-            float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
-            int coordsIndex = 0;
-            for (Data datum : data)
-            {
-              float xCoord = 1.0f - (m_endTimestamp - datum.timestamp) / floatTimeDifference;
-              float yCoord = (m_maxValue - datum.value) / valueDifference;
-              coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
-              coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
-              coordsIndex += 2;
+              m_newRefreshRequested = false;
+              data = m_dataAccessor.getData(m_startTimestamp - timeDifference,
+                                            m_endTimestamp + timeDifference,
+                                            m_startTimestamp,
+                                            m_endTimestamp);
             }
 
-            m_xOffset = 0.0f;
-            m_xScale = 1.0f;
-            m_beforeScalingStartTimestamp = Long.MIN_VALUE;
-            m_beforeScalingEndTimestamp = Long.MAX_VALUE;
+            if (data != null && data.length > 0)
+            {
+              m_firstDataEntry = data[0];
+              m_lastDataEntry = data[data.length - 1];
+              setTimeAxisLabels(m_dataAccessor.getLabelsForData(data));
+              float floatTimeDifference = (float)timeDifference;
+              if (m_firstDataEntry.timestamp > m_startTimestamp)
+              {
+                m_startTimestamp = m_firstDataEntry.timestamp;
+                floatTimeDifference = (float)(m_endTimestamp - m_startTimestamp);
+              }
+              if (m_lastDataEntry.timestamp < m_endTimestamp)
+              {
+                m_endTimestamp = m_lastDataEntry.timestamp;
+                floatTimeDifference = (float)(m_endTimestamp - m_startTimestamp);
+              }
+              float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
+              int coordsIndex = 0;
+              for (Data datum : data)
+              {
+                float xCoord = 1.0f - (m_endTimestamp - datum.timestamp) / floatTimeDifference;
+                float yCoord = (m_maxValue - datum.value) / valueDifference;
+                coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
+                coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
+                coordsIndex += 2;
+              }
 
-            m_dataLine = m_graphSurfaceView.addLineStrip(coords);
+              m_xOffset = 0.0f;
+              m_xScale = 1.0f;
+              m_beforeScalingStartTimestamp = Long.MIN_VALUE;
+              m_beforeScalingEndTimestamp = Long.MAX_VALUE;
+
+              m_dataLine = m_graphSurfaceView.addLineStrip(coords);
+            }
+          }
+
+          m_refreshing = false;
+          if (m_showRefreshProgress)
+          {
+            final boolean dataApplied = data != null && data.length > 0;
+            post(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                m_refreshProgressView.setVisibility(View.INVISIBLE);
+                m_noDataView.setVisibility(!dataApplied && m_showNoDataText ? View.VISIBLE : View.INVISIBLE);
+              }
+            });
           }
         }
-
-        m_refreshing = false;
-        if (m_showRefreshProgress)
-        {
-          final boolean dataApplied = data != null && data.length > 0;
-          post(new Runnable()
-          {
-            @Override
-            public void run()
-            {
-              m_refreshProgressView.setVisibility(View.INVISIBLE);
-              m_noDataView.setVisibility(!dataApplied && m_showNoDataText ? View.VISIBLE : View.INVISIBLE);
-            }
-          });
-        }
-      }
-    });
+      });
+    }
   }
 
   private void clearDataLineStrip()
