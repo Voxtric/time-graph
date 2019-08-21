@@ -64,7 +64,7 @@ public class GraphSurface extends GLSurfaceView
       break;
 
     case MotionEvent.ACTION_UP:
-      m_timeGraph.refresh();
+      m_timeGraph.refresh(false);
       handled = true;
       break;
 

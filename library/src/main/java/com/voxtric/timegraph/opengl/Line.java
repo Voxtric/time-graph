@@ -29,6 +29,9 @@ public class Line extends TransformableRenderable
     int xScalePositionHandle = GLES20.glGetUniformLocation(shaderHandle, "xScalePosition");
     GLES20.glUniform1f(xScalePositionHandle, m_xScalePosition);
 
+    int yScaleHandle = GLES20.glGetUniformLocation(shaderHandle, "yScale");
+    GLES20.glUniform1f(yScaleHandle, m_yScale);
+
     GLES20.glDrawArrays(GLES20.GL_LINES, 0, getVertexCount());
 
     GLES20.glDisableVertexAttribArray(vertexPositionHandle);

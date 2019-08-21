@@ -31,7 +31,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     if (savedInstanceState == null)
     {
       m_timeGraph.setValueAxisMidLabels(new float[]{ 4.0f, 8.0f, 12.0f });
-      m_timeGraph.setVisibleDataPeriod(-500, 500, MainActivity.this);
+      m_timeGraph.setVisibleDataPeriod(-500, 500, MainActivity.this, true);
 
       m_timeGraph.postDelayed(new Runnable()
       {
@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     {
       long startTimestamp = savedInstanceState.getLong("startTimestamp");
       long endTimestamp = savedInstanceState.getLong("endTimestamp");
-      m_timeGraph.setVisibleDataPeriod(startTimestamp, endTimestamp, this);
+      m_timeGraph.setVisibleDataPeriod(startTimestamp, endTimestamp, this, false);
     }
   }
 

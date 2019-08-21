@@ -1,5 +1,6 @@
 package com.voxtric.timegraph;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
@@ -51,6 +52,7 @@ public class TimeGraph extends ConstraintLayout
   private static final boolean DEFAULT_ALLOW_SCALE = true;
 
   private static final float VALUE_AXIS_MARGIN_DP = 4.0f;
+  private static final long NEW_DATA_ANIMATION_DURATION = 600L;
 
   private boolean m_showValueAxis = DEFAULT_SHOW_VALUE_AXIS;
   private float m_valueAxisTextSizeSp = DEFAULT_VALUE_AXIS_TEXT_SIZE_SP;
@@ -87,7 +89,9 @@ public class TimeGraph extends ConstraintLayout
   private float m_xOffset = 0.0f;
   private float m_xScale = 1.0f;
   private float m_normalisedForcedXCentre = -1.0f;
+
   private LineStrip m_dataLine = null;
+  private ValueAnimator m_newDataAnimator = null;
 
   private Data m_firstDataEntry = null;
   private Data m_lastDataEntry = null;
@@ -516,13 +520,13 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  public void setVisibleDataPeriod(long startTimestamp, long endTimestamp, @NonNull final DataAccessor dataAccessor)
+  public void setVisibleDataPeriod(long startTimestamp, long endTimestamp, @NonNull final DataAccessor dataAccessor, boolean animate)
   {
     m_startTimestamp = startTimestamp;
     m_endTimestamp = endTimestamp;
     m_dataAccessor = dataAccessor;
 
-    refresh();
+    refresh(animate);
   }
 
   public long getVisibleStartTimestamp()
@@ -541,16 +545,16 @@ public class TimeGraph extends ConstraintLayout
     m_endTimestamp = 0L;
     m_dataAccessor = null;
 
-    refresh();
+    refresh(false);
   }
 
-  public void refresh()
+  public void refresh(boolean animateNew)
   {
     m_normalisedForcedXCentre = -1.0f;
     final long timeDifference = m_endTimestamp - m_startTimestamp;
     if (timeDifference > 0L)
     {
-      createNewDataLineStrip(timeDifference);
+      createNewDataLineStrip(timeDifference, animateNew);
     }
     else
     {
@@ -558,7 +562,7 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  private void createNewDataLineStrip(final long timeDifference)
+  private void createNewDataLineStrip(final long timeDifference, final boolean animate)
   {
     if (m_refreshing)
     {
@@ -651,6 +655,32 @@ public class TimeGraph extends ConstraintLayout
               {
                 m_refreshProgressView.setVisibility(View.INVISIBLE);
                 m_noDataView.setVisibility(!dataApplied && m_showNoDataText ? View.VISIBLE : View.INVISIBLE);
+              }
+            });
+          }
+
+          if (animate)
+          {
+            post(new Runnable()
+            {
+              @Override
+              public void run()
+              {
+                m_newDataAnimator = ValueAnimator.ofFloat(0.0f, 1.0f);
+                m_newDataAnimator.setDuration(NEW_DATA_ANIMATION_DURATION);
+                m_newDataAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener()
+                {
+                  @Override
+                  public void onAnimationUpdate(ValueAnimator valueAnimator)
+                  {
+                    if (m_dataLine != null)
+                    {
+                      m_dataLine.setYScale((float)valueAnimator.getAnimatedValue());
+                      m_graphSurfaceView.requestRender();
+                    }
+                  }
+                });
+                m_newDataAnimator.start();
               }
             });
           }
@@ -777,14 +807,14 @@ public class TimeGraph extends ConstraintLayout
       {
         m_startTimestamp += startToFirstDifference;
         m_endTimestamp += startToFirstDifference;
-        refresh();
+        refresh(false);
         m_normalisedForcedXCentre = 0.0f;
       }
       else if (endToLastDifference > 0 && startToFirstDifference <= 0)
       {
         m_startTimestamp -= endToLastDifference;
         m_endTimestamp -= endToLastDifference;
-        refresh();
+        refresh(false);
         m_normalisedForcedXCentre = 1.0f;
       }
       else
