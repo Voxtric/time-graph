@@ -9,13 +9,16 @@ abstract class TransformableRenderable extends Renderable
       "uniform float xScale;" +
       "uniform float xScalePosition;" +
       "uniform float yScale;" +
-      "attribute vec4 vertexPosition;" +
+
+      "attribute vec2 vertexPosition;" +
+
       "void main() {" +
       "  float scaledDifference = (xScalePosition - vertexPosition.x) * (xScale - 1.0);" +
-      "  gl_Position = vec4(vertexPosition.x - scaledDifference + xOffset, vertexPosition.y * yScale, vertexPosition.zw);" +
+      "  gl_Position = vec4(vertexPosition.x - scaledDifference + xOffset, vertexPosition.y * yScale, 0, 1);" +
       "}";
   private static final String FRAGMENT_SHADER_CODE =
       "precision mediump float;" +
+
       "void main() {" +
       "  gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);" +
       "}";

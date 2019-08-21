@@ -4,6 +4,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.graphics.PointF;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -90,7 +91,7 @@ public class TimeGraph extends ConstraintLayout
   private float m_xScale = 1.0f;
   private float m_normalisedForcedXCentre = -1.0f;
 
-  private LineStrip m_dataLine = null;
+  private LineStrip m_dataLineStrip = null;
   private ValueAnimator m_newDataAnimator = null;
 
   private Data m_firstDataEntry = null;
@@ -102,6 +103,9 @@ public class TimeGraph extends ConstraintLayout
   private TextView m_valueAxisMinView = null;
   private TextView m_valueAxisMaxView = null;
   private ArrayList<TimeAxisLabel> m_timeAxisLabels = new ArrayList<>();
+
+  private float[] m_rangeHighlightingValues = null;
+  private int[] m_rangeHighlightingColors = null;
 
   public TimeGraph(Context context)
   {
@@ -520,6 +524,12 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
+  public void setRangeHighlights(float[] upperBoundaries, int[] colors)
+  {
+    m_rangeHighlightingValues = upperBoundaries;
+    m_rangeHighlightingColors = colors;
+  }
+
   public void setVisibleDataPeriod(long startTimestamp, long endTimestamp, @NonNull final DataAccessor dataAccessor, boolean animate)
   {
     m_startTimestamp = startTimestamp;
@@ -591,9 +601,9 @@ public class TimeGraph extends ConstraintLayout
         public void run()
         {
           float valueDifference = m_valueAxisMax - m_valueAxisMin;
-          if (m_dataLine != null)
+          if (m_dataLineStrip != null)
           {
-            m_graphSurfaceView.removeRenderable(m_dataLine);
+            m_graphSurfaceView.removeRenderable(m_dataLineStrip);
           }
 
           Data[] data = null;
@@ -624,23 +634,14 @@ public class TimeGraph extends ConstraintLayout
                 m_endTimestamp = m_lastDataEntry.timestamp;
                 floatTimeDifference = (float)(m_endTimestamp - m_startTimestamp);
               }
-              float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
-              int coordsIndex = 0;
-              for (Data datum : data)
-              {
-                float xCoord = 1.0f - (m_endTimestamp - datum.timestamp) / floatTimeDifference;
-                float yCoord = (m_valueAxisMax - datum.value) / valueDifference;
-                coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
-                coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
-                coordsIndex += 2;
-              }
+
+              createDataLineStrip(data, floatTimeDifference, valueDifference);
+              createHighlightMesh(data, floatTimeDifference, valueDifference);
 
               m_xOffset = 0.0f;
               m_xScale = 1.0f;
               m_beforeScalingStartTimestamp = Long.MIN_VALUE;
               m_beforeScalingEndTimestamp = Long.MAX_VALUE;
-
-              m_dataLine = m_graphSurfaceView.addLineStrip(coords);
             }
           }
 
@@ -673,9 +674,9 @@ public class TimeGraph extends ConstraintLayout
                   @Override
                   public void onAnimationUpdate(ValueAnimator valueAnimator)
                   {
-                    if (m_dataLine != null)
+                    if (m_dataLineStrip != null)
                     {
-                      m_dataLine.setYScale((float)valueAnimator.getAnimatedValue());
+                      m_dataLineStrip.setYScale((float)valueAnimator.getAnimatedValue());
                       m_graphSurfaceView.requestRender();
                     }
                   }
@@ -691,9 +692,9 @@ public class TimeGraph extends ConstraintLayout
 
   private void clearDataLineStrip()
   {
-    if (m_dataLine != null)
+    if (m_dataLineStrip != null)
     {
-      m_graphSurfaceView.removeRenderable(m_dataLine);
+      m_graphSurfaceView.removeRenderable(m_dataLineStrip);
     }
     setTimeAxisLabels(new TimeAxisLabelData[0]);
     post(new Runnable()
@@ -704,6 +705,205 @@ public class TimeGraph extends ConstraintLayout
         m_noDataView.setVisibility(m_showNoDataText ? View.VISIBLE : View.INVISIBLE);
       }
     });
+  }
+
+  private void createDataLineStrip(Data[] data, float timeDifference, float valueDifference)
+  {
+    float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
+    int coordsIndex = 0;
+    for (Data datum : data)
+    {
+      float xCoord = 1.0f - (m_endTimestamp - datum.timestamp) / timeDifference;
+      float yCoord = (m_valueAxisMax - datum.value) / valueDifference;
+      coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
+      coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
+      coordsIndex += 2;
+    }
+    m_dataLineStrip = m_graphSurfaceView.addLineStrip(coords);
+  }
+
+  private void createHighlightMesh(Data[] data, float timeDifference, float valueDifference)
+  {
+    ArrayList<Float> coords = new ArrayList<>();
+    ArrayList<Short> indices = new ArrayList<>();
+    ArrayList<Float> colors = new ArrayList<>();
+    short indexStart = 0;
+    for (int i = 0; i < data.length - 1; i++)
+    {
+      Data start = data[i];
+      float startXCoord = 1.0f - (m_endTimestamp - start.timestamp) / timeDifference;
+      float startYCoord = (m_valueAxisMax - start.value) / valueDifference;
+      Data end = data[i + 1];
+      float endXCoord = 1.0f - (m_endTimestamp - end.timestamp) / timeDifference;
+      float endYCoord = (m_valueAxisMax - end.value) / valueDifference;
+      if (endYCoord < startYCoord)
+      {
+        float tempXCoord = startXCoord;
+        float tempYCoord = startYCoord;
+        startXCoord = endXCoord;
+        startYCoord = endYCoord;
+        endXCoord = tempXCoord;
+        endYCoord = tempYCoord;
+      }
+
+      float lastX = startXCoord;
+      float lastY = startYCoord;
+      int lowestHighlightValueIntersected = -1;
+      for (int j = 0; j < m_rangeHighlightingValues.length; j++)
+      {
+        float normalisedRangeValue = m_rangeHighlightingValues[j] / valueDifference;
+        PointF intersection = new PointF();
+        if (getRangeIntersection(startXCoord, startYCoord, endXCoord, endYCoord, normalisedRangeValue, intersection))
+        {
+          coords.add(lastX);
+          coords.add(lastY);
+          coords.add(intersection.x);
+          coords.add(intersection.y);
+          coords.add(endXCoord);
+          coords.add(intersection.y);
+          coords.add(endXCoord);
+          coords.add(lastY);
+
+          indices.add(indexStart);
+          indices.add((short)(indexStart + 1));
+          indices.add((short)(indexStart + 2));
+          indices.add(indexStart);
+          indices.add((short)(indexStart + 2));
+          indices.add((short)(indexStart + 3));
+          indexStart += 4;
+
+          colors.add(1.0f);
+          colors.add(0.0f);
+          colors.add(0.0f);
+          colors.add(0.0f);
+          colors.add(0.0f);
+          colors.add(1.0f);
+          colors.add(0.0f);
+          colors.add(0.0f);
+          colors.add(0.0f);
+          colors.add(1.0f);
+          colors.add(0.0f);
+          colors.add(0.0f);
+          colors.add(1.0f);
+          colors.add(0.0f);
+          colors.add(0.0f);
+          colors.add(0.0f);
+
+          lastX = intersection.x;
+          lastY = intersection.y;
+
+          if (lowestHighlightValueIntersected == -1)
+          {
+            lowestHighlightValueIntersected = j;
+          }
+        }
+        else if (lowestHighlightValueIntersected != -1)
+        {
+          break;
+        }
+      }
+
+      coords.add(lastX);
+      coords.add(lastY);
+      coords.add(endXCoord);
+      coords.add(endYCoord);
+      coords.add(endXCoord);
+      coords.add(lastY);
+
+      indices.add(indexStart);
+      indices.add((short)(indexStart + 1));
+      indices.add((short)(indexStart + 2));
+      indexStart += 3;
+
+      colors.add(1.0f);
+      colors.add(0.0f);
+      colors.add(0.0f);
+      colors.add(0.0f);
+      colors.add(0.0f);
+      colors.add(1.0f);
+      colors.add(0.0f);
+      colors.add(0.0f);
+      colors.add(1.0f);
+      colors.add(0.0f);
+      colors.add(0.0f);
+      colors.add(0.0f);
+
+      lastY = startYCoord;
+      for (int j = lowestHighlightValueIntersected - 1; j >= 0; j--)
+      {
+        float normalisedRangeValue = m_rangeHighlightingValues[j] / valueDifference;
+
+        coords.add(startXCoord);
+        coords.add(normalisedRangeValue);
+        coords.add(startXCoord);
+        coords.add(lastY);
+        coords.add(endXCoord);
+        coords.add(lastY);
+        coords.add(endXCoord);
+        coords.add(normalisedRangeValue);
+
+        indices.add(indexStart);
+        indices.add((short)(indexStart + 1));
+        indices.add((short)(indexStart + 2));
+        indices.add(indexStart);
+        indices.add((short)(indexStart + 2));
+        indices.add((short)(indexStart + 3));
+        indexStart += 4;
+
+        colors.add(1.0f);
+        colors.add(0.0f);
+        colors.add(0.0f);
+        colors.add(0.0f);
+        colors.add(0.0f);
+        colors.add(1.0f);
+        colors.add(0.0f);
+        colors.add(0.0f);
+        colors.add(0.0f);
+        colors.add(1.0f);
+        colors.add(0.0f);
+        colors.add(0.0f);
+        colors.add(1.0f);
+        colors.add(0.0f);
+        colors.add(0.0f);
+        colors.add(0.0f);
+
+        lastY = normalisedRangeValue;
+      }
+    }
+
+    float[] coordArray = new float[coords.size()];
+    for (int i = 0; i < coordArray.length; i++)
+    {
+      coordArray[i] = (coords.get(i) * 2.0f) - 1.0f;
+      //coordArray[i] = coords.get(i);
+    }
+    short[] indexArray = new short[indices.size()];
+    for (int i = 0; i < indexArray.length; i++)
+    {
+      indexArray[i] = indices.get(i);
+    }
+    float[] colorArray = new float[colors.size()];
+    for (int i = 0; i < colorArray.length; i++)
+    {
+      colorArray[i] = colors.get(i);
+    }
+    m_graphSurfaceView.addMesh(coordArray, indexArray, colorArray);
+
+    /*for (int i = 0; i < indices.size(); i += 3)
+    {
+      m_graphSurfaceView.addLine(coordArray[indexArray[i] * 2] + 0.1f,
+                                 coordArray[indexArray[i] * 2 + 1],
+                                 coordArray[indexArray[i + 1] * 2] + 0.1f,
+                                 coordArray[indexArray[i + 1] * 2 + 1]);
+      m_graphSurfaceView.addLine(coordArray[indexArray[i + 1] * 2] + 0.1f,
+                                 coordArray[indexArray[i + 1] * 2 + 1],
+                                 coordArray[indexArray[i + 2] * 2] + 0.1f,
+                                 coordArray[indexArray[i + 2] * 2 + 1]);
+      m_graphSurfaceView.addLine(coordArray[indexArray[i + 2] * 2] + 0.1f,
+                                 coordArray[indexArray[i + 2] * 2 + 1],
+                                 coordArray[indexArray[i] * 2] + 0.1f,
+                                 coordArray[indexArray[i] * 2 + 1]);
+    }*/
   }
 
   public void scrollData(float normalisedScrollDelta)
@@ -754,9 +954,9 @@ public class TimeGraph extends ConstraintLayout
         label.offset += pixelMove;
       }
 
-      if (m_dataLine != null)
+      if (m_dataLineStrip != null)
       {
-        m_dataLine.setXOffset(m_xOffset * 2.0f);
+        m_dataLineStrip.setXOffset(m_xOffset * 2.0f);
       }
       for (TimeAxisLabel label : m_timeAxisLabels)
       {
@@ -829,9 +1029,9 @@ public class TimeGraph extends ConstraintLayout
           label.view.animate().translationX(labelPosition).setDuration(0).start();
         }
 
-        if (m_dataLine != null)
+        if (m_dataLineStrip != null)
         {
-          m_dataLine.setXScale(m_xScale, (normalisedXCentre * 2.0f) - 1.0f);
+          m_dataLineStrip.setXScale(m_xScale, (normalisedXCentre * 2.0f) - 1.0f);
         }
         for (TimeAxisLabel label : m_timeAxisLabels)
         {
@@ -975,6 +1175,32 @@ public class TimeGraph extends ConstraintLayout
   private static float pxToDp(Context context, float px)
   {
     return px / context.getResources().getDisplayMetrics().density;
+  }
+
+  private static boolean getRangeIntersection(float startX, float startY, float endX, float endY, float rangeY, PointF point)
+  {
+    boolean intersected = false;
+    if (startY != rangeY && endY != rangeY)
+    {
+      float a1 = endY - startY;
+      float b1 = startX - endX;
+      float c1 = a1 * (startX) + b1 * (startY);
+
+      float a2 = 0.0f;
+      float b2 = startX - endX;
+      float c2 = a2 * (startX) + b2 * (rangeY);
+
+      float determinant = a1 * b2 - a2 * b1;
+
+      if (determinant != 0)
+      {
+        point.x = (b2 * c1 - b1 * c2) / determinant;
+        point.y = (a1 * c2 - a2 * c1) / determinant;
+        intersected = (point.x <= Math.max(startX, endX) && point.x >= Math.min(startX, endX) &&
+            point.y <= Math.max(startY, endY) && point.y >= Math.min(startY, endY));
+      }
+    }
+    return intersected;
   }
 
   public static class TimeAxisLabelData

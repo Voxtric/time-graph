@@ -9,14 +9,17 @@ import java.nio.FloatBuffer;
 public abstract class Renderable
 {
   public static final int COORDS_PER_VERTEX = 2;
+  public static final int COLORS_PER_VERTEX = 4;
 
   private static final String VERTEX_SHADER_CODE =
-      "attribute vec4 vertexPosition;" +
+      "attribute vec2 vertexPosition;" +
+
       "void main() {" +
-      "  gl_Position = vertexPosition;" +
+      "  gl_Position = vec4(vertexPosition.xy, 0, 1);" +
       "}";
   private static final String FRAGMENT_SHADER_CODE =
       "precision mediump float;" +
+
       "void main() {" +
       "  gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);" +
       "}";

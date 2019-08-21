@@ -2,6 +2,7 @@ package com.voxtric.timegraph.sample;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.graphics.Color;
 import android.os.Bundle;
 
 import com.voxtric.timegraph.TimeGraph;
@@ -16,7 +17,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
   @Override
   protected void onCreate(Bundle savedInstanceState)
   {
-    Random random = new Random();
+    Random random = new Random(2);
     for (int i = 0; i < m_testData.length; i++)
     {
       m_testData[i] = new TimeGraph.Data((i * 100L) /*+ (Math.abs(random.nextLong()) % 99L)*/, random.nextFloat() * 16.0f);
@@ -31,15 +32,8 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     if (savedInstanceState == null)
     {
       m_timeGraph.setValueAxisMidLabels(new float[]{ 4.0f, 8.0f, 12.0f });
+      m_timeGraph.setRangeHighlights(new float[] { 0.0f, 4.0f, 8.0f, 12.0f, 16.0f }, new int[] { Color.RED, Color.GREEN, Color.YELLOW, Color.RED });
       m_timeGraph.setVisibleDataPeriod(-500, 500, MainActivity.this, true);
-
-      m_timeGraph.postDelayed(new Runnable()
-      {
-        @Override
-        public void run()
-        {
-        }
-      }, 2000);
     }
     else
     {

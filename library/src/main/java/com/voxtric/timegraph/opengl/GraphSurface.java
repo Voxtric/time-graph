@@ -45,6 +45,7 @@ public class GraphSurface extends GLSurfaceView
     super.onDetachedFromWindow();
     Renderable.releaseShader();
     TransformableRenderable.releaseShader();
+    Mesh.releaseShader();
   }
 
   @Override
@@ -145,6 +146,21 @@ public class GraphSurface extends GLSurfaceView
       }
     });
     return line;
+  }
+
+  public Mesh addMesh(float[] coords, short[] indices, float[] colors)
+  {
+    final Mesh mesh = new Mesh(coords, indices, colors);
+    queueEvent(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        m_renderer.addRenderable(mesh);
+        requestRender();
+      }
+    });
+    return mesh;
   }
 
   public void removeRenderable(final Renderable renderable)
