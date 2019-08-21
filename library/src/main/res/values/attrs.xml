@@ -8,6 +8,5 @@
         <attr name="showRefreshProgress" format="boolean"/>
         <attr name="showNoDataText" format="boolean"/>
         <attr name="noDataText" format="string"/>
-        <attr name="overScroll" format="fraction"/>
     </declare-styleable>
 </resources>

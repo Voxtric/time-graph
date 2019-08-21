@@ -33,7 +33,6 @@ public class TimeGraph extends ConstraintLayout
   private static final boolean DEFAULT_SHOW_REFRESH_PROGRESS = true;
   private static final boolean DEFAULT_SHOW_NO_DATA_TEXT = true;
   private static final String DEFAULT_NO_DATA_TEXT = "No Data To Display";
-  private static final float DEFAULT_OVER_SCROLL = 0.0f;
 
   private static final float VALUE_AXIS_MARGIN_DP = 4.0f;
 
@@ -44,7 +43,6 @@ public class TimeGraph extends ConstraintLayout
   private boolean m_showRefreshProgress = DEFAULT_SHOW_REFRESH_PROGRESS;
   private boolean m_showNoDataText = DEFAULT_SHOW_NO_DATA_TEXT;
   private CharSequence m_noDataText = DEFAULT_NO_DATA_TEXT;
-  private float m_overScroll = DEFAULT_OVER_SCROLL;
 
   private long m_startTimestamp = 0L;
   private long m_endTimestamp = 0L;
@@ -167,16 +165,6 @@ public class TimeGraph extends ConstraintLayout
   public boolean getShowRefreshProgress()
   {
     return m_showRefreshProgress;
-  }
-
-  public void setOverScroll(float value)
-  {
-    m_overScroll = value;
-  }
-
-  public float getOverScroll()
-  {
-    return m_overScroll;
   }
 
   public void setTimeAxisLabels(final TimeAxisLabelData[] timeAxisLabelData)
@@ -593,7 +581,6 @@ public class TimeGraph extends ConstraintLayout
       {
         m_noDataText = DEFAULT_NO_DATA_TEXT;
       }
-      m_overScroll = attributes.getFraction(R.styleable.TimeGraph_overScroll, 1, 1, DEFAULT_OVER_SCROLL);
 
       if (m_minValue > m_maxValue)
       {
