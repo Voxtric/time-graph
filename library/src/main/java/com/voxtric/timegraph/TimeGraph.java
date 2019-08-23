@@ -16,6 +16,7 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
@@ -26,6 +27,8 @@ import com.voxtric.timegraph.opengl.LineStrip;
 import com.voxtric.timegraph.opengl.Mesh;
 import com.voxtric.timegraph.opengl.Renderable;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -55,6 +58,13 @@ public class TimeGraph extends ConstraintLayout
 
   private static final float VALUE_AXIS_MARGIN_DP = 4.0f;
   private static final long NEW_DATA_ANIMATION_DURATION = 600L;
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({DISPLAY_MODE_BASIC, DISPLAY_MODE_UNDERLINE, DISPLAY_MODE_UNDERLINE_WITH_FADE})
+  public @interface DisplayMode {}
+  public static final int DISPLAY_MODE_BASIC = 0;
+  public static final int DISPLAY_MODE_UNDERLINE = 1;
+  public static final int DISPLAY_MODE_UNDERLINE_WITH_FADE = 2;
 
   private boolean m_showValueAxis = DEFAULT_SHOW_VALUE_AXIS;
   private float m_valueAxisTextSizeSp = DEFAULT_VALUE_AXIS_TEXT_SIZE_SP;
@@ -109,6 +119,7 @@ public class TimeGraph extends ConstraintLayout
 
   private float[] m_rangeHighlightingValues = null;
   private int[] m_rangeHighlightingColors = null;
+  private @DisplayMode int m_rangeHighlightingDisplayMode = DISPLAY_MODE_BASIC;
 
   public TimeGraph(Context context)
   {
@@ -160,6 +171,7 @@ public class TimeGraph extends ConstraintLayout
 
     state.putFloatArray("m_rangeHighlightingValues", m_rangeHighlightingValues);
     state.putIntArray("m_rangeHighlightingColors", m_rangeHighlightingColors);
+    state.putInt("m_rangeHighlightingDisplayMode", m_rangeHighlightingDisplayMode);
 
     float[] valueAxisMidValues = new float[m_valueAxisMidViews.size()];
     for (int i = 0; i < valueAxisMidValues.length; i++)
@@ -199,7 +211,10 @@ public class TimeGraph extends ConstraintLayout
       setAllowScroll(bundle.getBoolean("m_allowScroll"));
       setAllowScale(bundle.getBoolean("m_allowScale"));
 
-      setRangeHighlights(bundle.getFloatArray("m_rangeHighlightingValues"), bundle.getIntArray("m_rangeHighlightingColors"), false);
+      setRangeHighlights(bundle.getFloatArray("m_rangeHighlightingValues"),
+                         bundle.getIntArray("m_rangeHighlightingColors"),
+                         bundle.getInt("m_rangeHighlightingDisplayMode"),
+                         false);
 
       setValueAxisMidLabels(bundle.getFloatArray("valueAxisMidValues"));
     }
@@ -686,10 +701,11 @@ public class TimeGraph extends ConstraintLayout
     label.offset = offset;
   }
 
-  public void setRangeHighlights(float[] upperBoundaries, int[] colors, boolean animate)
+  public void setRangeHighlights(float[] upperBoundaries, int[] colors, @DisplayMode int displayMode, boolean animate)
   {
     m_rangeHighlightingValues = upperBoundaries;
     m_rangeHighlightingColors = colors;
+    m_rangeHighlightingDisplayMode = displayMode;
 
     refresh(animate);
   }
@@ -907,6 +923,28 @@ public class TimeGraph extends ConstraintLayout
   }
 
   private void createHighlightMesh(Data[] data, float timeDifference, float valueDifference)
+  {
+    switch (m_rangeHighlightingDisplayMode)
+    {
+    case DISPLAY_MODE_BASIC:
+      createHighlightMeshBasic(data, timeDifference, valueDifference);
+      break;
+    case DISPLAY_MODE_UNDERLINE:
+      createHighlightMeshUnderline(data, timeDifference, valueDifference);
+      break;
+    case DISPLAY_MODE_UNDERLINE_WITH_FADE:
+      break;
+    default:
+      throw new IllegalStateException("Unknown range highlighting display mode value.");
+    }
+  }
+
+  private void createHighlightMeshBasic(Data[] data, float timeDifference, float valueDifference)
+  {
+
+  }
+
+  private void createHighlightMeshUnderline(Data[] data, float timeDifference, float valueDifference)
   {
     ArrayList<Float> coords = new ArrayList<>();
     ArrayList<Short> indices = new ArrayList<>();

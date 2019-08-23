@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
       int green = Color.rgb(5, 80, 0);
 
       m_timeGraph.setValueAxisMidLabels(new float[]{ 4.0f, 8.0f, 12.0f });
-      m_timeGraph.setRangeHighlights(new float[] { 0.0f, 4.0f, 8.0f, 12.0f, 16.0f }, new int[] { red, green, yellow, red }, false);
+      m_timeGraph.setRangeHighlights(new float[] { 0.0f, 4.0f, 8.0f, 12.0f, 16.0f }, new int[] { red, green, yellow, red }, TimeGraph.DISPLAY_MODE_BASIC, false);
       m_timeGraph.setVisibleDataPeriod(0, 86400000L * 5L, MainActivity.this, true);
     }
     else
