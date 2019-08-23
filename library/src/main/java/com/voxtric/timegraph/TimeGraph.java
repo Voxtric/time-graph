@@ -233,6 +233,18 @@ public class TimeGraph extends ConstraintLayout
                             m_valueAxisMaxView.getId(), ConstraintSet.RIGHT, 0);
     }
     constraintSet.applyTo(this);
+
+    post(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        for (TimeAxisLabel label : m_timeAxisLabels)
+        {
+          repositionTimeAxisLabel(label);
+        }
+      }
+    });
   }
 
   public boolean getShowValueAxis()
@@ -357,6 +369,18 @@ public class TimeGraph extends ConstraintLayout
   {
     m_showTimeAxis = value;
     m_timeAxisLabelsLayoutView.setVisibility(value ? View.VISIBLE : View.GONE);
+
+    post(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        for (TextView textView : m_valueAxisMidViews)
+        {
+          repositionValueAxisLabel(textView);
+        }
+      }
+    });
   }
 
   public boolean getShowTimeAxis()
@@ -633,10 +657,17 @@ public class TimeGraph extends ConstraintLayout
               {
                 resizeViewForValueAxisLabels();
 
-                for (TextView textView : m_valueAxisMidViews)
+                post(new Runnable()
                 {
-                  repositionValueAxisLabel(textView);
-                }
+                  @Override
+                  public void run()
+                  {
+                    for (TextView textView : m_valueAxisMidViews)
+                    {
+                      repositionValueAxisLabel(textView);
+                    }
+                  }
+                });
               }
             }
           });
