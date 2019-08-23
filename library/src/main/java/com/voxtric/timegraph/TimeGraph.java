@@ -23,6 +23,7 @@ import androidx.constraintlayout.widget.ConstraintSet;
 import com.voxtric.timegraph.opengl.GraphSurface;
 import com.voxtric.timegraph.opengl.Line;
 import com.voxtric.timegraph.opengl.LineStrip;
+import com.voxtric.timegraph.opengl.Mesh;
 import com.voxtric.timegraph.opengl.Renderable;
 
 import java.text.DateFormat;
@@ -92,6 +93,7 @@ public class TimeGraph extends ConstraintLayout
   private float m_normalisedForcedXCentre = -1.0f;
 
   private LineStrip m_dataLineStrip = null;
+  private Mesh m_dataMesh = null;
   private ValueAnimator m_newDataAnimator = null;
 
   private Data m_firstDataEntry = null;
@@ -155,6 +157,9 @@ public class TimeGraph extends ConstraintLayout
     state.putBoolean("m_allowScroll", m_allowScroll);
     state.putBoolean("m_allowScale", m_allowScale);
 
+    state.putFloatArray("m_rangeHighlightingValues", m_rangeHighlightingValues);
+    state.putIntArray("m_rangeHighlightingColors", m_rangeHighlightingColors);
+
     float[] valueAxisMidValues = new float[m_valueAxisMidViews.size()];
     for (int i = 0; i < valueAxisMidValues.length; i++)
     {
@@ -192,6 +197,8 @@ public class TimeGraph extends ConstraintLayout
 
       setAllowScroll(bundle.getBoolean("m_allowScroll"));
       setAllowScale(bundle.getBoolean("m_allowScale"));
+
+      setRangeHighlights(bundle.getFloatArray("m_rangeHighlightingValues"), bundle.getIntArray("m_rangeHighlightingColors"));
 
       setValueAxisMidLabels(bundle.getFloatArray("valueAxisMidValues"));
     }
@@ -601,10 +608,6 @@ public class TimeGraph extends ConstraintLayout
         public void run()
         {
           float valueDifference = m_valueAxisMax - m_valueAxisMin;
-          if (m_dataLineStrip != null)
-          {
-            m_graphSurfaceView.removeRenderable(m_dataLineStrip);
-          }
 
           Data[] data = null;
           if (m_dataAccessor != null)
@@ -636,7 +639,10 @@ public class TimeGraph extends ConstraintLayout
               }
 
               createDataLineStrip(data, floatTimeDifference, valueDifference);
-              createHighlightMesh(data, floatTimeDifference, valueDifference);
+              if (m_rangeHighlightingValues != null && m_rangeHighlightingColors != null)
+              {
+                createHighlightMesh(data, floatTimeDifference, valueDifference);
+              }
 
               m_xOffset = 0.0f;
               m_xScale = 1.0f;
@@ -674,9 +680,11 @@ public class TimeGraph extends ConstraintLayout
                   @Override
                   public void onAnimationUpdate(ValueAnimator valueAnimator)
                   {
-                    if (m_dataLineStrip != null)
+                    if (m_dataLineStrip != null && m_dataMesh != null)
                     {
-                      m_dataLineStrip.setYScale((float)valueAnimator.getAnimatedValue());
+                      float animatedValue = (float)valueAnimator.getAnimatedValue();
+                      m_dataLineStrip.setYScale(animatedValue);
+                      m_dataMesh.setYScale(animatedValue);
                       m_graphSurfaceView.requestRender();
                     }
                   }
@@ -692,9 +700,10 @@ public class TimeGraph extends ConstraintLayout
 
   private void clearDataLineStrip()
   {
-    if (m_dataLineStrip != null)
+    if (m_dataLineStrip != null && m_dataMesh != null)
     {
       m_graphSurfaceView.removeRenderable(m_dataLineStrip);
+      m_graphSurfaceView.removeRenderable(m_dataMesh);
     }
     setTimeAxisLabels(new TimeAxisLabelData[0]);
     post(new Runnable()
@@ -719,7 +728,12 @@ public class TimeGraph extends ConstraintLayout
       coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
       coordsIndex += 2;
     }
+    LineStrip oldDataLine = m_dataLineStrip;
     m_dataLineStrip = m_graphSurfaceView.addLineStrip(coords);
+    if (oldDataLine != null)
+    {
+      m_graphSurfaceView.removeRenderable(oldDataLine);
+    }
   }
 
   private void createHighlightMesh(Data[] data, float timeDifference, float valueDifference)
@@ -748,13 +762,17 @@ public class TimeGraph extends ConstraintLayout
 
       float lastX = startXCoord;
       float lastY = startYCoord;
-      int lowestHighlightValueIntersected = -1;
       for (int j = 0; j < m_rangeHighlightingValues.length; j++)
       {
         float normalisedRangeValue = m_rangeHighlightingValues[j] / valueDifference;
         PointF intersection = new PointF();
         if (getRangeIntersection(startXCoord, startYCoord, endXCoord, endYCoord, normalisedRangeValue, intersection))
         {
+          float r = Color.red(m_rangeHighlightingColors[j - 1]) / Byte.MAX_VALUE;
+          float g = Color.green(m_rangeHighlightingColors[j - 1]) / Byte.MAX_VALUE;
+          float b = Color.blue(m_rangeHighlightingColors[j - 1]) / Byte.MAX_VALUE;
+
+          // Intersect quad
           coords.add(lastX);
           coords.add(lastY);
           coords.add(intersection.x);
@@ -772,37 +790,29 @@ public class TimeGraph extends ConstraintLayout
           indices.add((short)(indexStart + 3));
           indexStart += 4;
 
+          colors.add(r);
+          colors.add(g);
+          colors.add(b);
           colors.add(1.0f);
-          colors.add(0.0f);
-          colors.add(0.0f);
-          colors.add(0.0f);
-          colors.add(0.0f);
+          colors.add(r);
+          colors.add(g);
+          colors.add(b);
           colors.add(1.0f);
-          colors.add(0.0f);
-          colors.add(0.0f);
-          colors.add(0.0f);
+          colors.add(r);
+          colors.add(g);
+          colors.add(b);
           colors.add(1.0f);
-          colors.add(0.0f);
-          colors.add(0.0f);
+          colors.add(r);
+          colors.add(g);
+          colors.add(b);
           colors.add(1.0f);
-          colors.add(0.0f);
-          colors.add(0.0f);
-          colors.add(0.0f);
 
           lastX = intersection.x;
           lastY = intersection.y;
-
-          if (lowestHighlightValueIntersected == -1)
-          {
-            lowestHighlightValueIntersected = j;
-          }
-        }
-        else if (lowestHighlightValueIntersected != -1)
-        {
-          break;
         }
       }
 
+      // Peak
       coords.add(lastX);
       coords.add(lastY);
       coords.add(endXCoord);
@@ -815,32 +825,55 @@ public class TimeGraph extends ConstraintLayout
       indices.add((short)(indexStart + 2));
       indexStart += 3;
 
-      colors.add(1.0f);
-      colors.add(0.0f);
-      colors.add(0.0f);
-      colors.add(0.0f);
-      colors.add(0.0f);
-      colors.add(1.0f);
-      colors.add(0.0f);
-      colors.add(0.0f);
-      colors.add(1.0f);
-      colors.add(0.0f);
-      colors.add(0.0f);
-      colors.add(0.0f);
-
-      lastY = startYCoord;
-      for (int j = lowestHighlightValueIntersected - 1; j >= 0; j--)
+      int colorIndex = -1;
+      for (int j = 0; j < m_rangeHighlightingValues.length - 1 && colorIndex == -1; j++)
       {
-        float normalisedRangeValue = m_rangeHighlightingValues[j] / valueDifference;
+        float normalisedRangeStart = m_rangeHighlightingValues[j] / valueDifference;
+        float normalisedRangeEnd = m_rangeHighlightingValues[j + 1] / valueDifference;
+        if (normalisedRangeEnd > endYCoord)
+        {
+          colorIndex = j;
+        }
+      }
+      float r = Color.red(m_rangeHighlightingColors[colorIndex]) / Byte.MAX_VALUE;
+      float g = Color.green(m_rangeHighlightingColors[colorIndex]) / Byte.MAX_VALUE;
+      float b = Color.blue(m_rangeHighlightingColors[colorIndex]) / Byte.MAX_VALUE;
+      colors.add(r);
+      colors.add(g);
+      colors.add(b);
+      colors.add(1.0f);
+      colors.add(r);
+      colors.add(g);
+      colors.add(b);
+      colors.add(1.0f);
+      colors.add(r);
+      colors.add(g);
+      colors.add(b);
+      colors.add(1.0f);
 
+      boolean finish = false;
+      for (int j = 0; j < m_rangeHighlightingValues.length - 1 && !finish; j++)
+      {
+        float normalisedRangeStart = m_rangeHighlightingValues[j] / valueDifference;
+        float normalisedRangeEnd = m_rangeHighlightingValues[j + 1] / valueDifference;
+        if (normalisedRangeEnd > startYCoord)
+        {
+          normalisedRangeEnd = startYCoord;
+          finish = true;
+        }
+        r = Color.red(m_rangeHighlightingColors[j]) / Byte.MAX_VALUE;
+        g = Color.green(m_rangeHighlightingColors[j]) / Byte.MAX_VALUE;
+        b = Color.blue(m_rangeHighlightingColors[j]) / Byte.MAX_VALUE;
+
+        // Under quad
         coords.add(startXCoord);
-        coords.add(normalisedRangeValue);
+        coords.add(normalisedRangeStart);
         coords.add(startXCoord);
-        coords.add(lastY);
+        coords.add(normalisedRangeEnd);
         coords.add(endXCoord);
-        coords.add(lastY);
+        coords.add(normalisedRangeEnd);
         coords.add(endXCoord);
-        coords.add(normalisedRangeValue);
+        coords.add(normalisedRangeStart);
 
         indices.add(indexStart);
         indices.add((short)(indexStart + 1));
@@ -850,24 +883,22 @@ public class TimeGraph extends ConstraintLayout
         indices.add((short)(indexStart + 3));
         indexStart += 4;
 
+        colors.add(r);
+        colors.add(g);
+        colors.add(b);
         colors.add(1.0f);
-        colors.add(0.0f);
-        colors.add(0.0f);
-        colors.add(0.0f);
-        colors.add(0.0f);
+        colors.add(r);
+        colors.add(g);
+        colors.add(b);
         colors.add(1.0f);
-        colors.add(0.0f);
-        colors.add(0.0f);
-        colors.add(0.0f);
+        colors.add(r);
+        colors.add(g);
+        colors.add(b);
         colors.add(1.0f);
-        colors.add(0.0f);
-        colors.add(0.0f);
+        colors.add(r);
+        colors.add(g);
+        colors.add(b);
         colors.add(1.0f);
-        colors.add(0.0f);
-        colors.add(0.0f);
-        colors.add(0.0f);
-
-        lastY = normalisedRangeValue;
       }
     }
 
@@ -875,7 +906,6 @@ public class TimeGraph extends ConstraintLayout
     for (int i = 0; i < coordArray.length; i++)
     {
       coordArray[i] = (coords.get(i) * 2.0f) - 1.0f;
-      //coordArray[i] = coords.get(i);
     }
     short[] indexArray = new short[indices.size()];
     for (int i = 0; i < indexArray.length; i++)
@@ -887,23 +917,12 @@ public class TimeGraph extends ConstraintLayout
     {
       colorArray[i] = colors.get(i);
     }
-    m_graphSurfaceView.addMesh(coordArray, indexArray, colorArray);
-
-    /*for (int i = 0; i < indices.size(); i += 3)
+    Mesh oldDataMesh = m_dataMesh;
+    m_dataMesh = m_graphSurfaceView.addMesh(coordArray, indexArray, colorArray);
+    if (oldDataMesh != null)
     {
-      m_graphSurfaceView.addLine(coordArray[indexArray[i] * 2] + 0.1f,
-                                 coordArray[indexArray[i] * 2 + 1],
-                                 coordArray[indexArray[i + 1] * 2] + 0.1f,
-                                 coordArray[indexArray[i + 1] * 2 + 1]);
-      m_graphSurfaceView.addLine(coordArray[indexArray[i + 1] * 2] + 0.1f,
-                                 coordArray[indexArray[i + 1] * 2 + 1],
-                                 coordArray[indexArray[i + 2] * 2] + 0.1f,
-                                 coordArray[indexArray[i + 2] * 2 + 1]);
-      m_graphSurfaceView.addLine(coordArray[indexArray[i + 2] * 2] + 0.1f,
-                                 coordArray[indexArray[i + 2] * 2 + 1],
-                                 coordArray[indexArray[i] * 2] + 0.1f,
-                                 coordArray[indexArray[i] * 2 + 1]);
-    }*/
+      m_graphSurfaceView.removeRenderable(oldDataMesh);
+    }
   }
 
   public void scrollData(float normalisedScrollDelta)
@@ -954,15 +973,17 @@ public class TimeGraph extends ConstraintLayout
         label.offset += pixelMove;
       }
 
-      if (m_dataLineStrip != null)
+      float openGlXOffset = m_xOffset * 2.0f;
+      if (m_dataLineStrip != null && m_dataMesh != null)
       {
-        m_dataLineStrip.setXOffset(m_xOffset * 2.0f);
+        m_dataLineStrip.setXOffset(openGlXOffset);
+        m_dataMesh.setXOffset(openGlXOffset);
       }
       for (TimeAxisLabel label : m_timeAxisLabels)
       {
         if (label.marker != null)
         {
-          label.marker.setXOffset(m_xOffset * 2.0f);
+          label.marker.setXOffset(openGlXOffset);
         }
       }
       m_graphSurfaceView.requestRender();
@@ -1029,15 +1050,17 @@ public class TimeGraph extends ConstraintLayout
           label.view.animate().translationX(labelPosition).setDuration(0).start();
         }
 
-        if (m_dataLineStrip != null)
+        float openGlXScalePosition = (normalisedXCentre * 2.0f) - 1.0f;
+        if (m_dataLineStrip != null && m_dataMesh != null)
         {
-          m_dataLineStrip.setXScale(m_xScale, (normalisedXCentre * 2.0f) - 1.0f);
+          m_dataLineStrip.setXScale(m_xScale, openGlXScalePosition);
+          m_dataMesh.setXScale(m_xScale, openGlXScalePosition);
         }
         for (TimeAxisLabel label : m_timeAxisLabels)
         {
           if (label.marker != null)
           {
-            label.marker.setXScale(m_xScale, (normalisedXCentre * 2.0f) - 1.0f);
+            label.marker.setXScale(m_xScale, openGlXScalePosition);
           }
         }
         m_graphSurfaceView.requestRender();

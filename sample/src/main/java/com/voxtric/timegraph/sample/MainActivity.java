@@ -11,7 +11,7 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements TimeGraph.DataAccessor
 {
-  TimeGraph.Data[] m_testData = new TimeGraph.Data[18];
+  TimeGraph.Data[] m_testData = new TimeGraph.Data[40];
   TimeGraph m_timeGraph = null;
 
   @Override
@@ -20,7 +20,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     Random random = new Random(2);
     for (int i = 0; i < m_testData.length; i++)
     {
-      m_testData[i] = new TimeGraph.Data((i * 100L) /*+ (Math.abs(random.nextLong()) % 99L)*/, random.nextFloat() * 16.0f);
+      m_testData[i] = new TimeGraph.Data((i * 86400000L) + (Math.abs(random.nextLong()) % 86000000L), random.nextFloat() * 16.0f);
     }
 
 
@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     {
       m_timeGraph.setValueAxisMidLabels(new float[]{ 4.0f, 8.0f, 12.0f });
       m_timeGraph.setRangeHighlights(new float[] { 0.0f, 4.0f, 8.0f, 12.0f, 16.0f }, new int[] { Color.RED, Color.GREEN, Color.YELLOW, Color.RED });
-      m_timeGraph.setVisibleDataPeriod(-500, 500, MainActivity.this, true);
+      m_timeGraph.setVisibleDataPeriod(0, 86400000L * 5L, MainActivity.this, true);
     }
     else
     {
@@ -68,16 +68,6 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
   @Override
   public TimeGraph.TimeAxisLabelData[] getLabelsForData(TimeGraph.Data[] data)
   {
-    return new TimeGraph.TimeAxisLabelData[] {
-        new TimeGraph.TimeAxisLabelData(0, "1"),
-        new TimeGraph.TimeAxisLabelData(200, "2"),
-        new TimeGraph.TimeAxisLabelData(400, "3"),
-        new TimeGraph.TimeAxisLabelData(600, "4"),
-        new TimeGraph.TimeAxisLabelData(800, "5"),
-        new TimeGraph.TimeAxisLabelData(1000, "6"),
-        new TimeGraph.TimeAxisLabelData(1200, "7"),
-        new TimeGraph.TimeAxisLabelData(1400, "8"),
-        new TimeGraph.TimeAxisLabelData(1600, "9"),
-    };
+    return TimeGraph.TimeAxisLabelData.labelDays(data);
   }
 }
