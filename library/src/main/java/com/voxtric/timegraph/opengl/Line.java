@@ -4,9 +4,9 @@ import android.opengl.GLES20;
 
 public class Line extends TransformableRenderable
 {
-  Line(float[] coords)
+  Line(int drawOrder, float[] coords)
   {
-    super(coords);
+    super(drawOrder, coords);
   }
 
   @Override

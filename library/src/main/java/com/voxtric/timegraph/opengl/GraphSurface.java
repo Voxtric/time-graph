@@ -118,9 +118,9 @@ public class GraphSurface extends GLSurfaceView
     return handled;
   }
 
-  public LineStrip addLineStrip(float[] coords)
+  public LineStrip addLineStrip(int drawOrder, float[] coords)
   {
-    final LineStrip lineStrip = new LineStrip(coords);
+    final LineStrip lineStrip = new LineStrip(drawOrder, coords);
     queueEvent(new Runnable()
     {
       @Override
@@ -133,9 +133,9 @@ public class GraphSurface extends GLSurfaceView
     return lineStrip;
   }
 
-  public Line addLine(float startXPos, float startYPos, float endXPos, float endYPos)
+  public Line addLine(int drawOrder, float[] coords)
   {
-    final Line line = new Line(new float[] { startXPos, startYPos, endXPos, endYPos });
+    final Line line = new Line(drawOrder, coords);
     queueEvent(new Runnable()
     {
       @Override
@@ -148,9 +148,9 @@ public class GraphSurface extends GLSurfaceView
     return line;
   }
 
-  public Mesh addMesh(float[] coords, short[] indices, float[] colors)
+  public Mesh addMesh(int drawOrder, float[] coords, short[] indices, float[] colors)
   {
-    final Mesh mesh = new Mesh(coords, indices, colors);
+    final Mesh mesh = new Mesh(drawOrder, coords, indices, colors);
     queueEvent(new Runnable()
     {
       @Override

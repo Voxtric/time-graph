@@ -25,11 +25,15 @@ public abstract class Renderable
       "}";
   private static int s_shaderHandle = -1;
 
+  private int m_drawOrder = 0;
+
   private FloatBuffer m_vertexBuffer;
   private int m_vertexCount;
 
-  Renderable(float[] coords)
+  Renderable(int drawOrder, float[] coords)
   {
+    m_drawOrder = drawOrder;
+
     ByteBuffer byteBuffer = ByteBuffer.allocateDirect(coords.length * (Float.SIZE / Byte.SIZE));
     byteBuffer.order(ByteOrder.nativeOrder());
 
@@ -38,6 +42,11 @@ public abstract class Renderable
     m_vertexBuffer.position(0);
 
     m_vertexCount = coords.length / COORDS_PER_VERTEX;
+  }
+
+  public int getDrawOrder()
+  {
+    return m_drawOrder;
   }
 
   FloatBuffer getVertexBuffer()

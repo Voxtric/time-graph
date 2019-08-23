@@ -93,7 +93,8 @@ public class TimeGraph extends ConstraintLayout
   private float m_normalisedForcedXCentre = -1.0f;
 
   private LineStrip m_dataLineStrip = null;
-  private Mesh m_dataMesh = null;
+  private Mesh m_rangeHighlightMesh = null;
+  private Line m_labelMarkersLine = null;
   private ValueAnimator m_newDataAnimator = null;
 
   private Data m_firstDataEntry = null;
@@ -479,7 +480,6 @@ public class TimeGraph extends ConstraintLayout
           int index = 0;
           for (; index < timeAxisLabelData.length; index++)
           {
-
             TimeAxisLabel timeAxisLabel;
             if (index >= m_timeAxisLabels.size())
             {
@@ -508,15 +508,15 @@ public class TimeGraph extends ConstraintLayout
             timeAxisLabel.view.animate().translationXBy(offset).setDuration(0).start();
             timeAxisLabel.offset = offset;
 
-            if (timeAxisLabel.marker != null)
+            /*if (timeAxisLabel.marker != null)
             {
               m_graphSurfaceView.removeRenderable(timeAxisLabel.marker);
             }
             float markerX = (((offset / m_graphSurfaceView.getWidth()) * 2.0f) - 1.0f) + 0.0015f;
-            timeAxisLabel.marker = m_graphSurfaceView.addLine(markerX, -1.0f, markerX, -0.9f);
+            timeAxisLabel.marker = m_graphSurfaceView.addLine(markerX, -1.0f, markerX, -0.9f);*/
           }
 
-          for (int i = m_timeAxisLabels.size() - 1; i >= index; i--)
+          /*for (int i = m_timeAxisLabels.size() - 1; i >= index; i--)
           {
             TimeAxisLabel label = m_timeAxisLabels.get(i);
             m_timeLabelsLayoutView.removeView(label.view);
@@ -525,6 +525,24 @@ public class TimeGraph extends ConstraintLayout
               m_graphSurfaceView.removeRenderable(label.marker);
             }
             m_timeAxisLabels.remove(i);
+          }*/
+
+          int timeAxisLabelCount = m_timeAxisLabels.size();
+          float[] labelMarkerCoords = new float[timeAxisLabelCount * 4];
+          for (int i = 0; i < timeAxisLabelCount; i++)
+          {
+            int coordsIndex = i * 4;
+            float markerX = (((m_timeAxisLabels.get(i).offset / m_graphSurfaceView.getWidth()) * 2.0f) - 1.0f) + 0.0015f;
+            labelMarkerCoords[coordsIndex] = markerX;
+            labelMarkerCoords[coordsIndex + 1] = -1.0f;
+            labelMarkerCoords[coordsIndex + 2] = markerX;
+            labelMarkerCoords[coordsIndex + 3] = -0.9f;
+          }
+          Line oldLabelMarkersLine = m_labelMarkersLine;
+          m_labelMarkersLine = m_graphSurfaceView.addLine(1, labelMarkerCoords);
+          if (oldLabelMarkersLine != null)
+          {
+            m_graphSurfaceView.removeRenderable(oldLabelMarkersLine);
           }
         }
       });
@@ -680,13 +698,16 @@ public class TimeGraph extends ConstraintLayout
                   @Override
                   public void onAnimationUpdate(ValueAnimator valueAnimator)
                   {
-                    if (m_dataLineStrip != null && m_dataMesh != null)
+                    float animatedValue = (float)valueAnimator.getAnimatedValue();
+                    if (m_dataLineStrip != null)
                     {
-                      float animatedValue = (float)valueAnimator.getAnimatedValue();
                       m_dataLineStrip.setYScale(animatedValue);
-                      m_dataMesh.setYScale(animatedValue);
-                      m_graphSurfaceView.requestRender();
                     }
+                    if (m_rangeHighlightMesh != null)
+                    {
+                      m_rangeHighlightMesh.setYScale(animatedValue);
+                    }
+                    m_graphSurfaceView.requestRender();
                   }
                 });
                 m_newDataAnimator.start();
@@ -700,10 +721,20 @@ public class TimeGraph extends ConstraintLayout
 
   private void clearDataLineStrip()
   {
-    if (m_dataLineStrip != null && m_dataMesh != null)
+    if (m_dataLineStrip != null)
     {
       m_graphSurfaceView.removeRenderable(m_dataLineStrip);
-      m_graphSurfaceView.removeRenderable(m_dataMesh);
+      m_dataLineStrip = null;
+    }
+    if (m_rangeHighlightMesh != null)
+    {
+      m_graphSurfaceView.removeRenderable(m_rangeHighlightMesh);
+      m_rangeHighlightMesh = null;
+    }
+    if (m_labelMarkersLine != null)
+    {
+      m_graphSurfaceView.removeRenderable(m_labelMarkersLine);
+      m_labelMarkersLine = null;
     }
     setTimeAxisLabels(new TimeAxisLabelData[0]);
     post(new Runnable()
@@ -729,7 +760,7 @@ public class TimeGraph extends ConstraintLayout
       coordsIndex += 2;
     }
     LineStrip oldDataLine = m_dataLineStrip;
-    m_dataLineStrip = m_graphSurfaceView.addLineStrip(coords);
+    m_dataLineStrip = m_graphSurfaceView.addLineStrip(1, coords);
     if (oldDataLine != null)
     {
       m_graphSurfaceView.removeRenderable(oldDataLine);
@@ -768,9 +799,9 @@ public class TimeGraph extends ConstraintLayout
         PointF intersection = new PointF();
         if (getRangeIntersection(startXCoord, startYCoord, endXCoord, endYCoord, normalisedRangeValue, intersection))
         {
-          float r = Color.red(m_rangeHighlightingColors[j - 1]) / Byte.MAX_VALUE;
-          float g = Color.green(m_rangeHighlightingColors[j - 1]) / Byte.MAX_VALUE;
-          float b = Color.blue(m_rangeHighlightingColors[j - 1]) / Byte.MAX_VALUE;
+          float r = Color.red(m_rangeHighlightingColors[j - 1]) / (float)Byte.MAX_VALUE;
+          float g = Color.green(m_rangeHighlightingColors[j - 1]) / (float)Byte.MAX_VALUE;
+          float b = Color.blue(m_rangeHighlightingColors[j - 1]) / (float)Byte.MAX_VALUE;
 
           // Intersect quad
           coords.add(lastX);
@@ -835,9 +866,9 @@ public class TimeGraph extends ConstraintLayout
           colorIndex = j;
         }
       }
-      float r = Color.red(m_rangeHighlightingColors[colorIndex]) / Byte.MAX_VALUE;
-      float g = Color.green(m_rangeHighlightingColors[colorIndex]) / Byte.MAX_VALUE;
-      float b = Color.blue(m_rangeHighlightingColors[colorIndex]) / Byte.MAX_VALUE;
+      float r = Color.red(m_rangeHighlightingColors[colorIndex]) / (float)Byte.MAX_VALUE;
+      float g = Color.green(m_rangeHighlightingColors[colorIndex]) / (float)Byte.MAX_VALUE;
+      float b = Color.blue(m_rangeHighlightingColors[colorIndex]) / (float)Byte.MAX_VALUE;
       colors.add(r);
       colors.add(g);
       colors.add(b);
@@ -861,9 +892,9 @@ public class TimeGraph extends ConstraintLayout
           normalisedRangeEnd = startYCoord;
           finish = true;
         }
-        r = Color.red(m_rangeHighlightingColors[j]) / Byte.MAX_VALUE;
-        g = Color.green(m_rangeHighlightingColors[j]) / Byte.MAX_VALUE;
-        b = Color.blue(m_rangeHighlightingColors[j]) / Byte.MAX_VALUE;
+        r = Color.red(m_rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
+        g = Color.green(m_rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
+        b = Color.blue(m_rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
 
         // Under quad
         coords.add(startXCoord);
@@ -917,8 +948,8 @@ public class TimeGraph extends ConstraintLayout
     {
       colorArray[i] = colors.get(i);
     }
-    Mesh oldDataMesh = m_dataMesh;
-    m_dataMesh = m_graphSurfaceView.addMesh(coordArray, indexArray, colorArray);
+    Mesh oldDataMesh = m_rangeHighlightMesh;
+    m_rangeHighlightMesh = m_graphSurfaceView.addMesh(0, coordArray, indexArray, colorArray);
     if (oldDataMesh != null)
     {
       m_graphSurfaceView.removeRenderable(oldDataMesh);
@@ -974,17 +1005,17 @@ public class TimeGraph extends ConstraintLayout
       }
 
       float openGlXOffset = m_xOffset * 2.0f;
-      if (m_dataLineStrip != null && m_dataMesh != null)
+      if (m_dataLineStrip != null)
       {
         m_dataLineStrip.setXOffset(openGlXOffset);
-        m_dataMesh.setXOffset(openGlXOffset);
       }
-      for (TimeAxisLabel label : m_timeAxisLabels)
+      if (m_rangeHighlightMesh != null)
       {
-        if (label.marker != null)
-        {
-          label.marker.setXOffset(openGlXOffset);
-        }
+        m_rangeHighlightMesh.setXOffset(openGlXOffset);
+      }
+      if (m_labelMarkersLine != null)
+      {
+        m_labelMarkersLine.setXOffset(openGlXOffset);
       }
       m_graphSurfaceView.requestRender();
     }
@@ -1051,17 +1082,17 @@ public class TimeGraph extends ConstraintLayout
         }
 
         float openGlXScalePosition = (normalisedXCentre * 2.0f) - 1.0f;
-        if (m_dataLineStrip != null && m_dataMesh != null)
+        if (m_dataLineStrip != null)
         {
           m_dataLineStrip.setXScale(m_xScale, openGlXScalePosition);
-          m_dataMesh.setXScale(m_xScale, openGlXScalePosition);
         }
-        for (TimeAxisLabel label : m_timeAxisLabels)
+        if (m_rangeHighlightMesh != null)
         {
-          if (label.marker != null)
-          {
-            label.marker.setXScale(m_xScale, openGlXScalePosition);
-          }
+          m_rangeHighlightMesh.setXScale(m_xScale, openGlXScalePosition);
+        }
+        if (m_labelMarkersLine != null)
+        {
+          m_labelMarkersLine.setXScale(m_xScale, openGlXScalePosition);
         }
         m_graphSurfaceView.requestRender();
       }
@@ -1268,20 +1299,17 @@ public class TimeGraph extends ConstraintLayout
   {
     float offset;
     TextView view;
-    Line marker;
 
     TimeAxisLabel(TextView view)
     {
       this.offset = 0.0f;
       this.view = view;
-      this.marker = null;
     }
 
-    TimeAxisLabel(float offset, TextView view, Line marker)
+    TimeAxisLabel(float offset, TextView view)
     {
       this.offset = offset;
       this.view = view;
-      this.marker = marker;
     }
   }
 

@@ -29,9 +29,9 @@ abstract class TransformableRenderable extends Renderable
   float m_xScalePosition = 0.0f;
   float m_yScale = 1.0f;
 
-  TransformableRenderable(float[] coords)
+  TransformableRenderable(int drawOrder, float[] coords)
   {
-    super(coords);
+    super(drawOrder, coords);
   }
 
   public void setXOffset(float xOffset)

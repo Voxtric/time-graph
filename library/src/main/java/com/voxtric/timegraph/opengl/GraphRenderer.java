@@ -36,7 +36,24 @@ public class GraphRenderer implements GLSurfaceView.Renderer
 
   void addRenderable(Renderable renderable)
   {
-    m_renderables.add(renderable);
+    boolean added = false;
+    for (int i = 0; i < m_renderables.size() && !added; i++)
+    {
+      if (renderable.getDrawOrder() < m_renderables.get(i).getDrawOrder())
+      {
+        m_renderables.add(null);
+        for (int j = m_renderables.size() - 1; j > i; j--)
+        {
+          m_renderables.set(j, m_renderables.get(j - 1));
+        }
+        m_renderables.set(i, renderable);
+        added = true;
+      }
+    }
+    if (!added)
+    {
+      m_renderables.add(renderable);
+    }
   }
 
   public void removeRenderable(Renderable renderable)

@@ -38,11 +38,10 @@ public class Mesh extends TransformableRenderable
   private ShortBuffer m_indexBuffer;
   private int m_indexCount;
   private FloatBuffer m_colorBuffer;
-  private int m_colorCount;
 
-  Mesh(float[] coords, short[] indices, float[] colors)
+  Mesh(int drawOrder, float[] coords, short[] indices, float[] colors)
   {
-    super(coords);
+    super(drawOrder, coords);
 
     ByteBuffer byteBuffer = ByteBuffer.allocateDirect(indices.length * (Short.SIZE / Byte.SIZE));
     byteBuffer.order(ByteOrder.nativeOrder());
@@ -56,7 +55,6 @@ public class Mesh extends TransformableRenderable
     m_colorBuffer = byteBuffer.asFloatBuffer();
     m_colorBuffer.put(colors);
     m_colorBuffer.position(0);
-    m_colorCount = colors.length / Renderable.COLORS_PER_VERTEX;
   }
 
   @Override

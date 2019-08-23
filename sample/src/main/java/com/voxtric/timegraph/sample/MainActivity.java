@@ -11,7 +11,7 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements TimeGraph.DataAccessor
 {
-  TimeGraph.Data[] m_testData = new TimeGraph.Data[40];
+  TimeGraph.Data[] m_testData = new TimeGraph.Data[250];
   TimeGraph m_timeGraph = null;
 
   @Override
@@ -31,8 +31,12 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
     m_timeGraph = findViewById(R.id.time_graph);
     if (savedInstanceState == null)
     {
+      int red = Color.rgb(156, 0, 0);
+      int yellow = Color.rgb(204, 197, 0);
+      int green = Color.rgb(5, 80, 0);
+
       m_timeGraph.setValueAxisMidLabels(new float[]{ 4.0f, 8.0f, 12.0f });
-      m_timeGraph.setRangeHighlights(new float[] { 0.0f, 4.0f, 8.0f, 12.0f, 16.0f }, new int[] { Color.RED, Color.GREEN, Color.YELLOW, Color.RED });
+      m_timeGraph.setRangeHighlights(new float[] { 0.0f, 4.0f, 8.0f, 12.0f, 16.0f }, new int[] { red, green, yellow, red });
       m_timeGraph.setVisibleDataPeriod(0, 86400000L * 5L, MainActivity.this, true);
     }
     else
