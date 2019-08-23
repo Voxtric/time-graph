@@ -199,7 +199,7 @@ public class TimeGraph extends ConstraintLayout
       setAllowScroll(bundle.getBoolean("m_allowScroll"));
       setAllowScale(bundle.getBoolean("m_allowScale"));
 
-      setRangeHighlights(bundle.getFloatArray("m_rangeHighlightingValues"), bundle.getIntArray("m_rangeHighlightingColors"));
+      setRangeHighlights(bundle.getFloatArray("m_rangeHighlightingValues"), bundle.getIntArray("m_rangeHighlightingColors"), false);
 
       setValueAxisMidLabels(bundle.getFloatArray("valueAxisMidValues"));
     }
@@ -686,10 +686,12 @@ public class TimeGraph extends ConstraintLayout
     label.offset = offset;
   }
 
-  public void setRangeHighlights(float[] upperBoundaries, int[] colors)
+  public void setRangeHighlights(float[] upperBoundaries, int[] colors, boolean animate)
   {
     m_rangeHighlightingValues = upperBoundaries;
     m_rangeHighlightingColors = colors;
+
+    refresh(animate);
   }
 
   public void setVisibleDataPeriod(long startTimestamp, long endTimestamp, @NonNull final DataAccessor dataAccessor, boolean animate)
