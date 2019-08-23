@@ -2,18 +2,18 @@
 <resources>
     <declare-styleable name="TimeGraph">
         <attr name="showValueAxis" format="boolean"/>
-        <attr name="valueAxis_textSize" format="dimension"/>
+        <attr name="valueAxis_textSizeSp" format="float"/>
         <attr name="valueAxis_textColor" format="color"/>
         <attr name="valueAxis_min" format="float"/>
         <attr name="valueAxis_max" format="float"/>
 
         <attr name="showTimeAxis" format="boolean"/>
-        <attr name="timeAxis_textSize" format="dimension"/>
+        <attr name="timeAxis_textSizeSp" format="float"/>
         <attr name="timeAxis_textColor" format="color"/>
 
         <attr name="showNoDataText" format="boolean"/>
         <attr name="noData_text" format="string"/>
-        <attr name="noData_textSize" format="dimension"/>
+        <attr name="noData_textSizeSp" format="float"/>
         <attr name="noData_textColor" format="color"/>
 
         <attr name="showRefreshProgress" format="boolean"/>

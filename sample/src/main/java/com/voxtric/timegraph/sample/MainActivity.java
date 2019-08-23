@@ -38,6 +38,16 @@ public class MainActivity extends AppCompatActivity implements TimeGraph.DataAcc
       m_timeGraph.setValueAxisMidLabels(new float[]{ 4.0f, 8.0f, 12.0f });
       m_timeGraph.setRangeHighlights(new float[] { 0.0f, 4.0f, 8.0f, 12.0f, 16.0f }, new int[] { red, green, yellow, red });
       m_timeGraph.setVisibleDataPeriod(0, 86400000L * 5L, MainActivity.this, true);
+
+      m_timeGraph.postDelayed(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          //m_timeGraph.setValueAxisTextSizeSp(50);
+          //m_timeGraph.setValueAxisMax(300);
+        }
+      }, 2000L);
     }
     else
     {
