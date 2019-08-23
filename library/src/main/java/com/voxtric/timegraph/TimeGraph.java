@@ -220,6 +220,7 @@ public class TimeGraph extends ConstraintLayout
 
     ConstraintSet constraintSet = new ConstraintSet();
     constraintSet.clone(this);
+    constraintSet.clear(m_graphSurfaceView.getId(), ConstraintSet.START);
     if (value)
     {
       constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.LEFT,
@@ -1191,6 +1192,12 @@ public class TimeGraph extends ConstraintLayout
 
     ConstraintSet constraintSet = new ConstraintSet();
     constraintSet.clone(context, R.layout.graph_view);
+    if (!m_showValueAxis)
+    {
+      constraintSet.clear(m_graphSurfaceView.getId(), ConstraintSet.START);
+      constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.LEFT,
+                            m_valueAxisMaxView.getId(), ConstraintSet.RIGHT, 0);
+    }
     constraintSet.applyTo(this);
 
     if (!m_showValueAxis)
@@ -1216,6 +1223,12 @@ public class TimeGraph extends ConstraintLayout
         float offset = m_valueAxisMaxView.getHeight() * 0.5f;
         m_valueAxisMaxView.animate().translationYBy(-offset).setDuration(0).start();
         m_valueAxisMinView.animate().translationYBy(offset).setDuration(0).start();
+
+        ConstraintSet constraintSet = new ConstraintSet();
+        constraintSet.clone(TimeGraph.this);
+        int topGraphMargin = (int)Math.ceil(m_valueAxisMaxView.getHeight() * 0.5f);
+        constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, topGraphMargin);
+        constraintSet.applyTo(TimeGraph.this);
       }
     });
   }
