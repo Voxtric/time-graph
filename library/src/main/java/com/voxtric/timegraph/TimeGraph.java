@@ -180,6 +180,9 @@ public class TimeGraph extends ConstraintLayout
     }
     state.putFloatArray("valueAxisMidValues", valueAxisMidValues);
 
+    state.putLong("m_startTimestamp", m_startTimestamp);
+    state.putLong("m_endTimestamp", m_endTimestamp);
+
     return state;
   }
 
@@ -217,6 +220,9 @@ public class TimeGraph extends ConstraintLayout
                          false);
 
       setValueAxisMidLabels(bundle.getFloatArray("valueAxisMidValues"));
+
+      m_startTimestamp = bundle.getLong("m_startTimestamp");
+      m_endTimestamp = bundle.getLong("m_endTimestamp");
     }
     super.onRestoreInstanceState(state);
   }
@@ -738,6 +744,12 @@ public class TimeGraph extends ConstraintLayout
     refresh(false);
   }
 
+  public void refresh(DataAccessor dataAccessor, boolean animateNew)
+  {
+    m_dataAccessor = dataAccessor;
+    refresh(animateNew);
+  }
+
   public void refresh(boolean animateNew)
   {
     m_normalisedForcedXCentre = -1.0f;
@@ -811,10 +823,11 @@ public class TimeGraph extends ConstraintLayout
                 floatTimeDifference = (float)(m_endTimestamp - m_startTimestamp);
               }
 
-              createDataLineStrip(data, floatTimeDifference, valueDifference);
+              float startingYScale = animate ? 0.0f : 1.0f;
+              createDataLineStrip(data, floatTimeDifference, valueDifference, startingYScale);
               if (m_rangeHighlightingValues != null && m_rangeHighlightingColors != null)
               {
-                createHighlightMesh(data, floatTimeDifference, valueDifference);
+                createHighlightMesh(data, floatTimeDifference, valueDifference, startingYScale);
               }
 
               m_xOffset = 0.0f;
@@ -902,7 +915,7 @@ public class TimeGraph extends ConstraintLayout
     });
   }
 
-  private void createDataLineStrip(Data[] data, float timeDifference, float valueDifference)
+  private void createDataLineStrip(Data[] data, float timeDifference, float valueDifference, float startingYScale)
   {
     float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
     int coordsIndex = 0;
@@ -916,21 +929,22 @@ public class TimeGraph extends ConstraintLayout
     }
     LineStrip oldDataLine = m_dataLineStrip;
     m_dataLineStrip = m_graphSurfaceView.addLineStrip(1, coords);
+    m_dataLineStrip.setYScale(startingYScale);
     if (oldDataLine != null)
     {
       m_graphSurfaceView.removeRenderable(oldDataLine);
     }
   }
 
-  private void createHighlightMesh(Data[] data, float timeDifference, float valueDifference)
+  private void createHighlightMesh(Data[] data, float timeDifference, float valueDifference, float startingYScale)
   {
     switch (m_rangeHighlightingDisplayMode)
     {
     case DISPLAY_MODE_BASIC:
-      createHighlightMeshBasic(data, timeDifference, valueDifference);
+      createHighlightMeshBasic(data, timeDifference, valueDifference, startingYScale);
       break;
     case DISPLAY_MODE_UNDERLINE:
-      createHighlightMeshUnderline(data, timeDifference, valueDifference);
+      createHighlightMeshUnderline(data, timeDifference, valueDifference, startingYScale);
       break;
     case DISPLAY_MODE_UNDERLINE_WITH_FADE:
       break;
@@ -939,12 +953,12 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  private void createHighlightMeshBasic(Data[] data, float timeDifference, float valueDifference)
+  private void createHighlightMeshBasic(Data[] data, float timeDifference, float valueDifference, float startingYScale)
   {
 
   }
 
-  private void createHighlightMeshUnderline(Data[] data, float timeDifference, float valueDifference)
+  private void createHighlightMeshUnderline(Data[] data, float timeDifference, float valueDifference, float startingYScale)
   {
     ArrayList<Float> coords = new ArrayList<>();
     ArrayList<Short> indices = new ArrayList<>();
@@ -1131,6 +1145,7 @@ public class TimeGraph extends ConstraintLayout
     }
     Mesh oldDataMesh = m_rangeHighlightMesh;
     m_rangeHighlightMesh = m_graphSurfaceView.addMesh(0, coordArray, indexArray, colorArray);
+    m_rangeHighlightMesh.setYScale(startingYScale);
     if (oldDataMesh != null)
     {
       m_graphSurfaceView.removeRenderable(oldDataMesh);
