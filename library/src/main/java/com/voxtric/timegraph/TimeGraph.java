@@ -182,8 +182,8 @@ public class TimeGraph extends ConstraintLayout
       setShowValueAxis(bundle.getBoolean("m_showValueAxis"));
       setValueAxisTextSizeSp(bundle.getFloat("m_valueAxisTextSizeSp"));
       setValueAxisTextColor(bundle.getInt("m_valueAxisTextColor"));
-      setValueAxisMin(bundle.getFloat("m_valueAxisMin"));
-      setValueAxisMax(bundle.getFloat("m_valueAxisMax"));
+      setValueAxisMin(bundle.getFloat("m_valueAxisMin"), false);
+      setValueAxisMax(bundle.getFloat("m_valueAxisMax"), false);
 
       setShowTimeAxis(bundle.getBoolean("m_showTimeAxis"));
       setTimeAxisTextSizeSp(bundle.getFloat("m_timeAxisTextSizeSp"));
@@ -305,7 +305,7 @@ public class TimeGraph extends ConstraintLayout
     return m_valueAxisTextColor;
   }
 
-  public void setValueAxisMinMax(float min, float max)
+  public void setValueAxisMinMax(float min, float max, boolean animate)
   {
     if (min <= max)
     {
@@ -314,10 +314,10 @@ public class TimeGraph extends ConstraintLayout
 
     m_valueAxisMin = min;
     m_valueAxisMinView.setText(String.valueOf(min));
-    setValueAxisMax(max);
+    setValueAxisMax(max, animate);
   }
 
-  public void setValueAxisMin(float value)
+  public void setValueAxisMin(float value, boolean animate)
   {
     if (value >= m_valueAxisMax)
     {
@@ -326,6 +326,8 @@ public class TimeGraph extends ConstraintLayout
 
     m_valueAxisMin = value;
     m_valueAxisMinView.setText(String.valueOf(value));
+
+    refresh(animate);
   }
 
   public float getValueAxisMin()
@@ -333,7 +335,7 @@ public class TimeGraph extends ConstraintLayout
     return m_valueAxisMin;
   }
 
-  public void setValueAxisMax(float value)
+  public void setValueAxisMax(float value, boolean animate)
   {
     if (value <= m_valueAxisMin)
     {
@@ -341,25 +343,9 @@ public class TimeGraph extends ConstraintLayout
     }
 
     m_valueAxisMax = value;
-
-    final int initialWidth = m_valueAxisMaxView.getWidth();
-
     m_valueAxisMaxView.setText(String.valueOf(value));
 
-    post(new Runnable()
-    {
-      @Override
-      public void run()
-      {
-        if (initialWidth != m_valueAxisMaxView.getWidth())
-        {
-          for (TimeAxisLabel label : m_timeAxisLabels)
-          {
-            repositionTimeAxisLabel(label);
-          }
-        }
-      }
-    });
+    refresh(animate);
   }
 
   public float getValueAxisMax()
@@ -913,9 +899,9 @@ public class TimeGraph extends ConstraintLayout
 
       float lastX = startXCoord;
       float lastY = startYCoord;
-      for (int j = 0; j < m_rangeHighlightingValues.length; j++)
+      for (int j = 1; j < m_rangeHighlightingValues.length; j++)
       {
-        float normalisedRangeValue = m_rangeHighlightingValues[j] / valueDifference;
+        float normalisedRangeValue = (m_rangeHighlightingValues[j] - m_valueAxisMin) / valueDifference;
         PointF intersection = new PointF();
         if (getRangeIntersection(startXCoord, startYCoord, endXCoord, endYCoord, normalisedRangeValue, intersection))
         {
@@ -966,8 +952,8 @@ public class TimeGraph extends ConstraintLayout
       int colorIndex = -1;
       for (int j = 0; j < m_rangeHighlightingValues.length - 1 && colorIndex == -1; j++)
       {
-        float normalisedRangeStart = m_rangeHighlightingValues[j] / valueDifference;
-        float normalisedRangeEnd = m_rangeHighlightingValues[j + 1] / valueDifference;
+        float normalisedRangeStart = (m_rangeHighlightingValues[j] - m_valueAxisMin) / valueDifference;
+        float normalisedRangeEnd = (m_rangeHighlightingValues[j + 1] - m_valueAxisMin) / valueDifference;
         if (normalisedRangeEnd > endYCoord)
         {
           colorIndex = j;
@@ -1009,8 +995,8 @@ public class TimeGraph extends ConstraintLayout
       boolean finish = false;
       for (int j = 0; j < m_rangeHighlightingValues.length - 1 && !finish; j++)
       {
-        float normalisedRangeStart = m_rangeHighlightingValues[j] / valueDifference;
-        float normalisedRangeEnd = m_rangeHighlightingValues[j + 1] / valueDifference;
+        float normalisedRangeStart = (m_rangeHighlightingValues[j] - m_valueAxisMin) / valueDifference;
+        float normalisedRangeEnd = (m_rangeHighlightingValues[j + 1] - m_valueAxisMin) / valueDifference;
         if (normalisedRangeEnd > startYCoord)
         {
           normalisedRangeEnd = startYCoord;
