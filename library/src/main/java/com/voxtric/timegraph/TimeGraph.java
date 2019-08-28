@@ -723,9 +723,39 @@ public class TimeGraph extends ConstraintLayout
     label.offset = offset;
   }
 
-  public void setRangeHighlights(float[] upperBoundaries, int[] colors, @DisplayMode int displayMode, boolean animate)
+  public void setRangeHighlights(@NonNull float[] values, @NonNull int[] colors, @DisplayMode int displayMode, boolean animate)
   {
-    m_rangeHighlightingValues = upperBoundaries;
+    if (values.length <= 1)
+    {
+      throw new IllegalArgumentException("Insufficient range highlight values have been provided.");
+    }
+
+    if (values.length != colors.length - 1)
+    {
+      throw new IllegalArgumentException("The number of range highlight colors must be one fewer than the number of range highlight values.");
+    }
+
+    for (int i = 1; i < values.length; i++)
+    {
+      if (values[i] < values[i - 1])
+      {
+        throw new IllegalArgumentException("Range highlight values must be provided in ascending order.");
+      }
+    }
+
+    if (displayMode == DISPLAY_MODE_BACKGROUND_WITH_FADE || displayMode == DISPLAY_MODE_UNDERLINE_WITH_FADE)
+    {
+      for (int i = 1; i < values.length; i++)
+      {
+        float modifier = (m_valueAxisMax - m_valueAxisMin) * HALF_FADE_MULTIPLIER;
+        if (values[i] - modifier <= values[i - 1] + modifier)
+        {
+          throw new IllegalArgumentException("Not enough distance between range highlight values to use fade.");
+        }
+      }
+    }
+
+    m_rangeHighlightingValues = values;
     m_rangeHighlightingColors = colors;
     m_rangeHighlightingDisplayMode = displayMode;
 
