@@ -762,6 +762,18 @@ public class TimeGraph extends ConstraintLayout
     refresh(animate);
   }
 
+  public void clearRangeHighlights()
+  {
+    m_rangeHighlightingValues = null;
+    m_rangeHighlightingColors = null;
+
+    if (m_rangeHighlightMesh != null)
+    {
+      m_graphSurfaceView.removeRenderable(m_rangeHighlightMesh);
+      m_rangeHighlightMesh = null;
+    }
+  }
+
   public void setVisibleDataPeriod(long startTimestamp, long endTimestamp, @NonNull final GraphDataProvider dataProvider, boolean animate)
   {
     m_startTimestamp = startTimestamp;
