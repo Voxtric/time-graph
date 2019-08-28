@@ -1005,24 +1005,8 @@ public class TimeGraph extends ConstraintLayout
 
   private void createRangeHighlightMeshBackgroundWithFade(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
   {
-
-    float[] rangeHighlightingValues = new float[m_rangeHighlightingColors.length * 2];
-    rangeHighlightingValues[0] = m_rangeHighlightingValues[0];
-    rangeHighlightingValues[rangeHighlightingValues.length - 1] = m_rangeHighlightingValues[m_rangeHighlightingValues.length - 1];
-    int rangeHighlightValuesIndex = 1;
-    float modifier = valueDifference * HALF_FADE_MULTIPLIER;
-    for (int i = 1; i < m_rangeHighlightingValues.length - 1; i++)
-    {
-      rangeHighlightingValues[rangeHighlightValuesIndex] = m_rangeHighlightingValues[i] - modifier;
-      rangeHighlightingValues[rangeHighlightValuesIndex + 1] = m_rangeHighlightingValues[i] + modifier;
-      rangeHighlightValuesIndex += 2;
-    }
-
-    int[] rangeHighlightingColors = new int[rangeHighlightingValues.length];
-    for (int i = 0; i < rangeHighlightingValues.length; i++)
-    {
-      rangeHighlightingColors[i] = m_rangeHighlightingColors[i / 2];
-    }
+    float[] rangeHighlightingValues = modifyRangeHighlightingValuesForFade(valueDifference);
+    int[] rangeHighlightingColors = modifyRangeHighlightingColorsForFade(rangeHighlightingValues.length);
 
     float[] coordArray = new float[rangeHighlightingValues.length * 2 * Renderable.COORDS_PER_VERTEX];
     short[] indexArray = new short[(rangeHighlightingValues.length - 1) * 6];
@@ -1252,23 +1236,8 @@ public class TimeGraph extends ConstraintLayout
 
   private void createRangeHighlightMeshUnderlineWithFade(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
   {
-    float[] rangeHighlightingValues = new float[m_rangeHighlightingColors.length * 2];
-    rangeHighlightingValues[0] = m_rangeHighlightingValues[0];
-    rangeHighlightingValues[rangeHighlightingValues.length - 1] = m_rangeHighlightingValues[m_rangeHighlightingValues.length - 1];
-    int rangeHighlightValuesIndex = 1;
-    float modifier = valueDifference * HALF_FADE_MULTIPLIER;
-    for (int i = 1; i < m_rangeHighlightingValues.length - 1; i++)
-    {
-      rangeHighlightingValues[rangeHighlightValuesIndex] = m_rangeHighlightingValues[i] - modifier;
-      rangeHighlightingValues[rangeHighlightValuesIndex + 1] = m_rangeHighlightingValues[i] + modifier;
-      rangeHighlightValuesIndex += 2;
-    }
-
-    int[] rangeHighlightingColors = new int[rangeHighlightingValues.length];
-    for (int i = 0; i < rangeHighlightingValues.length; i++)
-    {
-      rangeHighlightingColors[i] = m_rangeHighlightingColors[i / 2];
-    }
+    float[] rangeHighlightingValues = modifyRangeHighlightingValuesForFade(valueDifference);
+    int[] rangeHighlightingColors = modifyRangeHighlightingColorsForFade(rangeHighlightingValues.length);
 
     ArrayList<Float> coords = new ArrayList<>();
     ArrayList<Short> indices = new ArrayList<>();
@@ -1485,6 +1454,32 @@ public class TimeGraph extends ConstraintLayout
     }
 
     createVariableSizedMesh(startingYScale, coords, indices, colors);
+  }
+
+  private float[] modifyRangeHighlightingValuesForFade(float valueDifference)
+  {
+    float[] rangeHighlightingValues = new float[m_rangeHighlightingColors.length * 2];
+    rangeHighlightingValues[0] = m_rangeHighlightingValues[0];
+    rangeHighlightingValues[rangeHighlightingValues.length - 1] = m_rangeHighlightingValues[m_rangeHighlightingValues.length - 1];
+    int rangeHighlightValuesIndex = 1;
+    float modifier = valueDifference * HALF_FADE_MULTIPLIER;
+    for (int i = 1; i < m_rangeHighlightingValues.length - 1; i++)
+    {
+      rangeHighlightingValues[rangeHighlightValuesIndex] = m_rangeHighlightingValues[i] - modifier;
+      rangeHighlightingValues[rangeHighlightValuesIndex + 1] = m_rangeHighlightingValues[i] + modifier;
+      rangeHighlightValuesIndex += 2;
+    }
+    return rangeHighlightingValues;
+  }
+
+  private int[] modifyRangeHighlightingColorsForFade(int rangeHighlightingValuesLength)
+  {
+    int[] rangeHighlightingColors = new int[rangeHighlightingValuesLength];
+    for (int i = 0; i < rangeHighlightingValuesLength; i++)
+    {
+      rangeHighlightingColors[i] = m_rangeHighlightingColors[i / 2];
+    }
+    return rangeHighlightingColors;
   }
 
   private void createVariableSizedMesh(float startingYScale, ArrayList<Float> coords, ArrayList<Short> indices, ArrayList<Float> colors)
