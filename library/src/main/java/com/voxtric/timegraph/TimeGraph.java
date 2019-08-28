@@ -61,7 +61,7 @@ public class TimeGraph extends ConstraintLayout
   @IntDef({ DISPLAY_MODE_BACKGROUND, DISPLAY_MODE_BACKGROUND_WITH_FADE, DISPLAY_MODE_UNDERLINE, DISPLAY_MODE_UNDERLINE_WITH_FADE})
   @interface DisplayMode {}
   public static final int DISPLAY_MODE_BACKGROUND = 0;
-  public static final int DISPLAY_MODE_BACKGROUND_WITH_FADE = 4;
+  public static final int DISPLAY_MODE_BACKGROUND_WITH_FADE = 1;
   public static final int DISPLAY_MODE_UNDERLINE = 2;
   public static final int DISPLAY_MODE_UNDERLINE_WITH_FADE = 3;
 
@@ -1000,13 +1000,7 @@ public class TimeGraph extends ConstraintLayout
       indexStart += 4;
     }
 
-    MeshRenderable oldDataMesh = m_rangeHighlightMesh;
-    m_rangeHighlightMesh = m_graphSurfaceView.addMesh(0, coordArray, indexArray, colorArray);
-    m_rangeHighlightMesh.setYScale(startingYScale);
-    if (oldDataMesh != null)
-    {
-      m_graphSurfaceView.removeRenderable(oldDataMesh);
-    }
+    replaceMesh(startingYScale, coordArray, indexArray, colorArray);
   }
 
   private void createRangeHighlightMeshBackgroundWithFade(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
@@ -1072,13 +1066,7 @@ public class TimeGraph extends ConstraintLayout
       indexStart += 4;
     }
 
-    MeshRenderable oldDataMesh = m_rangeHighlightMesh;
-    m_rangeHighlightMesh = m_graphSurfaceView.addMesh(0, coordArray, indexArray, colorArray);
-    m_rangeHighlightMesh.setYScale(startingYScale);
-    if (oldDataMesh != null)
-    {
-      m_graphSurfaceView.removeRenderable(oldDataMesh);
-    }
+    replaceMesh(startingYScale, coordArray, indexArray, colorArray);
   }
 
   private void createRangeHighlightMeshUnderline(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
@@ -1251,28 +1239,7 @@ public class TimeGraph extends ConstraintLayout
       }
     }
 
-    float[] coordArray = new float[coords.size()];
-    for (int i = 0; i < coordArray.length; i++)
-    {
-      coordArray[i] = (coords.get(i) * 2.0f) - 1.0f;
-    }
-    short[] indexArray = new short[indices.size()];
-    for (int i = 0; i < indexArray.length; i++)
-    {
-      indexArray[i] = indices.get(i);
-    }
-    float[] colorArray = new float[colors.size()];
-    for (int i = 0; i < colorArray.length; i++)
-    {
-      colorArray[i] = colors.get(i);
-    }
-    MeshRenderable oldDataMesh = m_rangeHighlightMesh;
-    m_rangeHighlightMesh = m_graphSurfaceView.addMesh(0, coordArray, indexArray, colorArray);
-    m_rangeHighlightMesh.setYScale(startingYScale);
-    if (oldDataMesh != null)
-    {
-      m_graphSurfaceView.removeRenderable(oldDataMesh);
-    }
+    createVariableSizedMesh(startingYScale, coords, indices, colors);
   }
 
   private void createRangeHighlightMeshUnderlineWithFade(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
@@ -1509,6 +1476,11 @@ public class TimeGraph extends ConstraintLayout
       }
     }
 
+    createVariableSizedMesh(startingYScale, coords, indices, colors);
+  }
+
+  private void createVariableSizedMesh(float startingYScale, ArrayList<Float> coords, ArrayList<Short> indices, ArrayList<Float> colors)
+  {
     float[] coordArray = new float[coords.size()];
     for (int i = 0; i < coordArray.length; i++)
     {
@@ -1524,6 +1496,12 @@ public class TimeGraph extends ConstraintLayout
     {
       colorArray[i] = colors.get(i);
     }
+
+    replaceMesh(startingYScale, coordArray, indexArray, colorArray);
+  }
+
+  private void replaceMesh(float startingYScale, float[] coordArray, short[] indexArray, float[] colorArray)
+  {
     MeshRenderable oldDataMesh = m_rangeHighlightMesh;
     m_rangeHighlightMesh = m_graphSurfaceView.addMesh(0, coordArray, indexArray, colorArray);
     m_rangeHighlightMesh.setYScale(startingYScale);

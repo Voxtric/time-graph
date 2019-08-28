@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
     Random random = new Random(2);
     for (int i = 0; i < m_testData.length; i++)
     {
-      m_testData[i] = new GraphData((i * 86400000L)/* + (Math.abs(random.nextLong()) % 86000000L)*/, random.nextFloat() * 16.0f);
+      m_testData[i] = new GraphData((i * 86400000L) + (Math.abs(random.nextLong()) % 86000000L), random.nextFloat() * 16.0f);
     }
 
 
@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
       int green = Color.rgb(5, 80, 0);
 
       m_timeGraph.setValueAxisMidLabels(new float[]{ 4.0f, 8.0f, 12.0f });
-      m_timeGraph.setRangeHighlights(new float[] { 0.0f, 4.0f, 8.0f, 12.0f, 16.0f }, new int[] { red, green, yellow, red }, TimeGraph.DISPLAY_MODE_BACKGROUND_WITH_FADE, false);
+      m_timeGraph.setRangeHighlights(new float[] { 0.0f, 4.0f, 8.0f, 12.0f, 16.0f }, new int[] { red, green, yellow, red }, TimeGraph.DISPLAY_MODE_UNDERLINE_WITH_FADE, true);
       m_timeGraph.setVisibleDataPeriod(0, 86400000L * 5L, MainActivity.this, true);
     }
   }
