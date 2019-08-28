@@ -44,7 +44,7 @@ public class TimeGraph extends ConstraintLayout
   private static final int DEFAULT_TIME_AXIS_TEXT_COLOR = Color.GRAY;
 
   private static final boolean DEFAULT_SHOW_NO_DATA_TEXT = true;
-  private static final String DEFAULT_NO_DATA_TEXT = "No GraphData To Display";
+  private static final String DEFAULT_NO_DATA_TEXT = "No Data To Display";
   private static final float DEFAULT_NO_DATA_TEXT_SIZE_SP = 18.0f;
   private static final int DEFAULT_NO_DATA_TEXT_COLOR = Color.BLACK;
 
@@ -57,11 +57,12 @@ public class TimeGraph extends ConstraintLayout
   private static final long NEW_DATA_ANIMATION_DURATION = 600L;
 
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef({DISPLAY_MODE_BASIC, DISPLAY_MODE_UNDERLINE, DISPLAY_MODE_UNDERLINE_WITH_FADE})
+  @IntDef({ DISPLAY_MODE_BACKGROUND, DISPLAY_MODE_BACKGROUND_WITH_FADE, DISPLAY_MODE_UNDERLINE, DISPLAY_MODE_UNDERLINE_WITH_FADE})
   @interface DisplayMode {}
-  public static final int DISPLAY_MODE_BASIC = 0;
-  public static final int DISPLAY_MODE_UNDERLINE = 1;
-  public static final int DISPLAY_MODE_UNDERLINE_WITH_FADE = 2;
+  public static final int DISPLAY_MODE_BACKGROUND = 0;
+  public static final int DISPLAY_MODE_BACKGROUND_WITH_FADE = 4;
+  public static final int DISPLAY_MODE_UNDERLINE = 2;
+  public static final int DISPLAY_MODE_UNDERLINE_WITH_FADE = 3;
 
   private boolean m_showValueAxis = DEFAULT_SHOW_VALUE_AXIS;
   private float m_valueAxisTextSizeSp = DEFAULT_VALUE_AXIS_TEXT_SIZE_SP;
@@ -116,7 +117,7 @@ public class TimeGraph extends ConstraintLayout
 
   private float[] m_rangeHighlightingValues = null;
   private int[] m_rangeHighlightingColors = null;
-  private @DisplayMode int m_rangeHighlightingDisplayMode = DISPLAY_MODE_BASIC;
+  private @DisplayMode int m_rangeHighlightingDisplayMode = DISPLAY_MODE_BACKGROUND;
 
   public TimeGraph(Context context)
   {
@@ -937,8 +938,11 @@ public class TimeGraph extends ConstraintLayout
   {
     switch (m_rangeHighlightingDisplayMode)
     {
-    case DISPLAY_MODE_BASIC:
-      createHighlightMeshBasic(data, timeDifference, valueDifference, startingYScale);
+    case DISPLAY_MODE_BACKGROUND:
+      createHighlightMeshBackground(data, timeDifference, valueDifference, startingYScale);
+      break;
+    case DISPLAY_MODE_BACKGROUND_WITH_FADE:
+      createHighlightMeshBackgroundWithFade(data, timeDifference, valueDifference, startingYScale);
       break;
     case DISPLAY_MODE_UNDERLINE:
       createHighlightMeshUnderline(data, timeDifference, valueDifference, startingYScale);
@@ -951,7 +955,60 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  private void createHighlightMeshBasic(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
+  private void createHighlightMeshBackground(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
+  {
+    float[] coordArray = new float[m_rangeHighlightingColors.length * 4 * Renderable.COORDS_PER_VERTEX];
+    short[] indexArray = new short[m_rangeHighlightingColors.length * 6];
+    float[] colorArray = new float[m_rangeHighlightingColors.length * 4 * Renderable.COLORS_PER_VERTEX];
+
+    int coordStartIndex = 0;
+    int indexStartIndex = 0;
+    int colorStartIndex = 0;
+    short indexStart = 0;
+    for (int i = 0; i < m_rangeHighlightingColors.length; i++)
+    {
+      float normalisedRangeStart = (m_rangeHighlightingValues[i] - m_valueAxisMin) / valueDifference;
+      float normalisedRangeEnd = (m_rangeHighlightingValues[i + 1] - m_valueAxisMin) / valueDifference;
+      coordArray[coordStartIndex] = -1.0f;
+      coordArray[coordStartIndex + 1] = (normalisedRangeStart * 2.0f) - 1.0f;
+      coordArray[coordStartIndex + 2] = -1.0f;
+      coordArray[coordStartIndex + 3] = (normalisedRangeEnd * 2.0f) - 1.0f;
+      coordArray[coordStartIndex + 4] = 1.0f;
+      coordArray[coordStartIndex + 5] = (normalisedRangeEnd * 2.0f) - 1.0f;
+      coordArray[coordStartIndex + 6] = 1.0f;
+      coordArray[coordStartIndex + 7] = (normalisedRangeStart * 2.0f) - 1.0f;
+      coordStartIndex += 8;
+
+      indexArray[indexStartIndex] = indexStart;
+      indexArray[indexStartIndex + 1] = (short)(indexStart + 1);
+      indexArray[indexStartIndex + 2] = (short)(indexStart + 2);
+      indexArray[indexStartIndex + 3] = indexStart;
+      indexArray[indexStartIndex + 4] = (short)(indexStart + 2);
+      indexArray[indexStartIndex + 5] = (short)(indexStart + 3);
+      indexStartIndex += 6;
+
+      for (int j = 0; j < 4; j++)
+      {
+        colorArray[colorStartIndex] = Color.red(m_rangeHighlightingColors[i]) / (float)Byte.MAX_VALUE;
+        colorArray[colorStartIndex + 1] = Color.green(m_rangeHighlightingColors[i]) / (float)Byte.MAX_VALUE;
+        colorArray[colorStartIndex + 2] = Color.blue(m_rangeHighlightingColors[i]) / (float)Byte.MAX_VALUE;
+        colorArray[colorStartIndex + 3] = 1.0f;
+        colorStartIndex += 4;
+      }
+
+      indexStart += 4;
+    }
+
+    MeshRenderable oldDataMesh = m_rangeHighlightMesh;
+    m_rangeHighlightMesh = m_graphSurfaceView.addMesh(0, coordArray, indexArray, colorArray);
+    m_rangeHighlightMesh.setYScale(startingYScale);
+    if (oldDataMesh != null)
+    {
+      m_graphSurfaceView.removeRenderable(oldDataMesh);
+    }
+  }
+
+  private void createHighlightMeshBackgroundWithFade(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
   {
 
   }
@@ -1411,11 +1468,6 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  float lerp(float a, float b, float f)
-  {
-    return a + f * (b - a);
-  }
-
   public void scrollData(float normalisedScrollDelta)
   {
     if (m_allowScroll)
@@ -1469,7 +1521,7 @@ public class TimeGraph extends ConstraintLayout
       {
         m_dataLineStrip.setXOffset(openGlXOffset);
       }
-      if (m_rangeHighlightMesh != null)
+      if (m_rangeHighlightMesh != null && m_rangeHighlightingDisplayMode > DISPLAY_MODE_BACKGROUND_WITH_FADE)
       {
         m_rangeHighlightMesh.setXOffset(openGlXOffset);
       }
@@ -1546,7 +1598,7 @@ public class TimeGraph extends ConstraintLayout
         {
           m_dataLineStrip.setXScale(m_xScale, openGlXScalePosition);
         }
-        if (m_rangeHighlightMesh != null)
+        if (m_rangeHighlightMesh != null && m_rangeHighlightingDisplayMode > DISPLAY_MODE_BACKGROUND_WITH_FADE)
         {
           m_rangeHighlightMesh.setXScale(m_xScale, openGlXScalePosition);
         }
@@ -1713,6 +1765,11 @@ public class TimeGraph extends ConstraintLayout
   private static int spToPx(Context context, float sp)
   {
     return (int)TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, context.getResources().getDisplayMetrics());
+  }
+
+  private static float lerp(float startValue, float endValue, float interpolationFraction)
+  {
+    return startValue + interpolationFraction * (endValue - startValue);
   }
 
   private static boolean getRangeIntersection(float startX, float startY, float endX, float endY, float rangeY, PointF point)
