@@ -55,6 +55,7 @@ public class TimeGraph extends ConstraintLayout
 
   private static final float VALUE_AXIS_MARGIN_DP = 4.0f;
   private static final long NEW_DATA_ANIMATION_DURATION = 600L;
+  private static final float HALF_FADE_MULTIPLIER = 0.05f;
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({ DISPLAY_MODE_BACKGROUND, DISPLAY_MODE_BACKGROUND_WITH_FADE, DISPLAY_MODE_UNDERLINE, DISPLAY_MODE_UNDERLINE_WITH_FADE})
@@ -939,23 +940,23 @@ public class TimeGraph extends ConstraintLayout
     switch (m_rangeHighlightingDisplayMode)
     {
     case DISPLAY_MODE_BACKGROUND:
-      createHighlightMeshBackground(data, timeDifference, valueDifference, startingYScale);
+      createRangeHighlightMeshBackground(data, timeDifference, valueDifference, startingYScale);
       break;
     case DISPLAY_MODE_BACKGROUND_WITH_FADE:
-      createHighlightMeshBackgroundWithFade(data, timeDifference, valueDifference, startingYScale);
+      createRangeHighlightMeshBackgroundWithFade(data, timeDifference, valueDifference, startingYScale);
       break;
     case DISPLAY_MODE_UNDERLINE:
-      createHighlightMeshUnderline(data, timeDifference, valueDifference, startingYScale);
+      createRangeHighlightMeshUnderline(data, timeDifference, valueDifference, startingYScale);
       break;
     case DISPLAY_MODE_UNDERLINE_WITH_FADE:
-      createHighlightMeshUnderlineWithFade(data, timeDifference, valueDifference, startingYScale);
+      createRangeHighlightMeshUnderlineWithFade(data, timeDifference, valueDifference, startingYScale);
       break;
     default:
       throw new IllegalStateException("Unknown range highlighting display mode value.");
     }
   }
 
-  private void createHighlightMeshBackground(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
+  private void createRangeHighlightMeshBackground(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
   {
     float[] coordArray = new float[m_rangeHighlightingColors.length * 4 * Renderable.COORDS_PER_VERTEX];
     short[] indexArray = new short[m_rangeHighlightingColors.length * 6];
@@ -1008,12 +1009,79 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  private void createHighlightMeshBackgroundWithFade(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
+  private void createRangeHighlightMeshBackgroundWithFade(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
   {
 
+    float[] rangeHighlightingValues = new float[m_rangeHighlightingColors.length * 2];
+    rangeHighlightingValues[0] = m_rangeHighlightingValues[0];
+    rangeHighlightingValues[rangeHighlightingValues.length - 1] = m_rangeHighlightingValues[m_rangeHighlightingValues.length - 1];
+    int rangeHighlightValuesIndex = 1;
+    float modifier = valueDifference * HALF_FADE_MULTIPLIER;
+    for (int i = 1; i < m_rangeHighlightingValues.length - 1; i++)
+    {
+      rangeHighlightingValues[rangeHighlightValuesIndex] = m_rangeHighlightingValues[i] - modifier;
+      rangeHighlightingValues[rangeHighlightValuesIndex + 1] = m_rangeHighlightingValues[i] + modifier;
+      rangeHighlightValuesIndex += 2;
+    }
+
+    int[] rangeHighlightingColors = new int[rangeHighlightingValues.length];
+    for (int i = 0; i < rangeHighlightingValues.length; i++)
+    {
+      rangeHighlightingColors[i] = m_rangeHighlightingColors[i / 2];
+    }
+
+    float[] coordArray = new float[(rangeHighlightingValues.length - 1) * 4 * Renderable.COORDS_PER_VERTEX];
+    short[] indexArray = new short[(rangeHighlightingValues.length - 1) * 6];
+    float[] colorArray = new float[(rangeHighlightingValues.length - 1) * 4 * Renderable.COLORS_PER_VERTEX];
+
+    int coordStartIndex = 0;
+    int indexStartIndex = 0;
+    int colorStartIndex = 0;
+    short indexStart = 0;
+    for (int i = 0; i < rangeHighlightingColors.length - 1; i++)
+    {
+      float normalisedRangeStart = (rangeHighlightingValues[i] - m_valueAxisMin) / valueDifference;
+      float normalisedRangeEnd = (rangeHighlightingValues[i + 1] - m_valueAxisMin) / valueDifference;
+      coordArray[coordStartIndex] = -1.0f;
+      coordArray[coordStartIndex + 1] = (normalisedRangeStart * 2.0f) - 1.0f;
+      coordArray[coordStartIndex + 2] = 1.0f;
+      coordArray[coordStartIndex + 3] = (normalisedRangeStart * 2.0f) - 1.0f;
+      coordArray[coordStartIndex + 4] = 1.0f;
+      coordArray[coordStartIndex + 5] = (normalisedRangeEnd * 2.0f) - 1.0f;
+      coordArray[coordStartIndex + 6] = -1.0f;
+      coordArray[coordStartIndex + 7] = (normalisedRangeEnd * 2.0f) - 1.0f;
+      coordStartIndex += 8;
+
+      indexArray[indexStartIndex] = indexStart;
+      indexArray[indexStartIndex + 1] = (short)(indexStart + 1);
+      indexArray[indexStartIndex + 2] = (short)(indexStart + 2);
+      indexArray[indexStartIndex + 3] = indexStart;
+      indexArray[indexStartIndex + 4] = (short)(indexStart + 2);
+      indexArray[indexStartIndex + 5] = (short)(indexStart + 3);
+      indexStartIndex += 6;
+
+      for (int j = 0; j < 4; j++)
+      {
+        colorArray[colorStartIndex] = Color.red(rangeHighlightingColors[i + (j / 2)]) / (float)Byte.MAX_VALUE;
+        colorArray[colorStartIndex + 1] = Color.green(rangeHighlightingColors[i + (j / 2)]) / (float)Byte.MAX_VALUE;
+        colorArray[colorStartIndex + 2] = Color.blue(rangeHighlightingColors[i + (j / 2)]) / (float)Byte.MAX_VALUE;
+        colorArray[colorStartIndex + 3] = 1.0f;
+        colorStartIndex += 4;
+      }
+
+      indexStart += 4;
+    }
+
+    MeshRenderable oldDataMesh = m_rangeHighlightMesh;
+    m_rangeHighlightMesh = m_graphSurfaceView.addMesh(0, coordArray, indexArray, colorArray);
+    m_rangeHighlightMesh.setYScale(startingYScale);
+    if (oldDataMesh != null)
+    {
+      m_graphSurfaceView.removeRenderable(oldDataMesh);
+    }
   }
 
-  private void createHighlightMeshUnderline(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
+  private void createRangeHighlightMeshUnderline(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
   {
     ArrayList<Float> coords = new ArrayList<>();
     ArrayList<Short> indices = new ArrayList<>();
@@ -1207,13 +1275,13 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  private void createHighlightMeshUnderlineWithFade(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
+  private void createRangeHighlightMeshUnderlineWithFade(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
   {
     float[] rangeHighlightingValues = new float[m_rangeHighlightingColors.length * 2];
     rangeHighlightingValues[0] = m_rangeHighlightingValues[0];
     rangeHighlightingValues[rangeHighlightingValues.length - 1] = m_rangeHighlightingValues[m_rangeHighlightingValues.length - 1];
     int rangeHighlightValuesIndex = 1;
-    float modifier = valueDifference * 0.05f;
+    float modifier = valueDifference * HALF_FADE_MULTIPLIER;
     for (int i = 1; i < m_rangeHighlightingValues.length - 1; i++)
     {
       rangeHighlightingValues[rangeHighlightValuesIndex] = m_rangeHighlightingValues[i] - modifier;
@@ -1419,9 +1487,6 @@ public class TimeGraph extends ConstraintLayout
         bottomR = Color.red(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
         bottomG = Color.green(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
         bottomB = Color.blue(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
-        /*topR = Color.red(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE;
-        topG = Color.green(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE;
-        topB = Color.blue(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE;*/
         topR = lerp(Color.red(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE, bottomR, colorInterpolation);
         topG = lerp(Color.green(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE, bottomG, colorInterpolation);
         topB = lerp(Color.blue(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE, bottomB, colorInterpolation);
