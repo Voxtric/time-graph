@@ -60,7 +60,7 @@ public class TimeGraph extends ConstraintLayout
 
   private static final float VALUE_AXIS_MARGIN_DP = 4.0f;
   private static final long NEW_DATA_ANIMATION_DURATION = 600L;
-  private static final float HALF_FADE_MULTIPLIER = 0.05f;
+  private static final float HALF_FADE_MULTIPLIER = 0.04f;
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
@@ -472,6 +472,13 @@ public class TimeGraph extends ConstraintLayout
   public void setTimeAxisMarkerColor(@ColorInt int color)
   {
     m_timeAxisMarkerColor = color;
+
+    if (m_labelMarkersLine != null)
+    {
+      m_labelMarkersLine.setColor(color);
+      m_graphSurfaceView.requestRender();
+    }
+
     DrawableCompat.setTint(m_timeAxisLabelsBackground, color);
     for (TimeAxisLabel label : m_timeAxisLabels)
     {
@@ -706,7 +713,7 @@ public class TimeGraph extends ConstraintLayout
             labelMarkerCoords[coordsIndex + 3] = -0.9f;
           }
           LineRenderable oldLabelMarkersLine = m_labelMarkersLine;
-          m_labelMarkersLine = m_graphSurfaceView.addLine(1, labelMarkerCoords);
+          m_labelMarkersLine = m_graphSurfaceView.addLine(1, labelMarkerCoords, m_timeAxisMarkerColor);
           if (oldLabelMarkersLine != null)
           {
             m_graphSurfaceView.removeRenderable(oldLabelMarkersLine);
@@ -1013,7 +1020,7 @@ public class TimeGraph extends ConstraintLayout
       coordsIndex += 2;
     }
     LineStripRenderable oldDataLine = m_dataLineStrip;
-    m_dataLineStrip = m_graphSurfaceView.addLineStrip(1, coords);
+    m_dataLineStrip = m_graphSurfaceView.addLineStrip(1, coords, Color.BLACK);
     m_dataLineStrip.setYScale(startingYScale);
     if (oldDataLine != null)
     {
@@ -1076,9 +1083,9 @@ public class TimeGraph extends ConstraintLayout
 
       for (int j = 0; j < 4; j++)
       {
-        colorArray[colorStartIndex] = Color.red(m_rangeHighlightingColors[i]) / (float)Byte.MAX_VALUE;
-        colorArray[colorStartIndex + 1] = Color.green(m_rangeHighlightingColors[i]) / (float)Byte.MAX_VALUE;
-        colorArray[colorStartIndex + 2] = Color.blue(m_rangeHighlightingColors[i]) / (float)Byte.MAX_VALUE;
+        colorArray[colorStartIndex] = Color.red(m_rangeHighlightingColors[i]) / 255.0f;
+        colorArray[colorStartIndex + 1] = Color.green(m_rangeHighlightingColors[i]) / 255.0f;
+        colorArray[colorStartIndex + 2] = Color.blue(m_rangeHighlightingColors[i]) / 255.0f;
         colorArray[colorStartIndex + 3] = 1.0f;
         colorStartIndex += 4;
       }
@@ -1105,9 +1112,9 @@ public class TimeGraph extends ConstraintLayout
     coordArray[3] = (firstNormalisedRangeValue * 2.0f) - 1.0f;
     for (int i = 0; i < 2; i++)
     {
-      colorArray[(i * 4)] = Color.red(rangeHighlightingColors[0]) / (float)Byte.MAX_VALUE;
-      colorArray[(i * 4) + 1] = Color.green(rangeHighlightingColors[0]) / (float)Byte.MAX_VALUE;
-      colorArray[(i * 4) + 2] = Color.blue(rangeHighlightingColors[0]) / (float)Byte.MAX_VALUE;
+      colorArray[(i * 4)] = Color.red(rangeHighlightingColors[0]) / 255.0f;
+      colorArray[(i * 4) + 1] = Color.green(rangeHighlightingColors[0]) / 255.0f;
+      colorArray[(i * 4) + 2] = Color.blue(rangeHighlightingColors[0]) / 255.0f;
       colorArray[(i * 4) + 3] = 1.0f;
     }
     int coordStartIndex = 4;
@@ -1134,9 +1141,9 @@ public class TimeGraph extends ConstraintLayout
 
       for (int j = 0; j < 2; j++)
       {
-        colorArray[colorStartIndex] = Color.red(rangeHighlightingColors[i]) / (float)Byte.MAX_VALUE;
-        colorArray[colorStartIndex + 1] = Color.green(rangeHighlightingColors[i]) / (float)Byte.MAX_VALUE;
-        colorArray[colorStartIndex + 2] = Color.blue(rangeHighlightingColors[i]) / (float)Byte.MAX_VALUE;
+        colorArray[colorStartIndex] = Color.red(rangeHighlightingColors[i]) / 255.0f;
+        colorArray[colorStartIndex + 1] = Color.green(rangeHighlightingColors[i]) / 255.0f;
+        colorArray[colorStartIndex + 2] = Color.blue(rangeHighlightingColors[i]) / 255.0f;
         colorArray[colorStartIndex + 3] = 1.0f;
         colorStartIndex += 4;
       }
@@ -1202,9 +1209,9 @@ public class TimeGraph extends ConstraintLayout
         indices.add((short)(indexStart + 2));
         indexStart += 4;
 
-        float r = Color.red(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
-        float g = Color.green(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
-        float b = Color.blue(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+        float r = Color.red(m_rangeHighlightingColors[indexReached - 1]) / 255.0f;
+        float g = Color.green(m_rangeHighlightingColors[indexReached - 1]) / 255.0f;
+        float b = Color.blue(m_rangeHighlightingColors[indexReached - 1]) / 255.0f;
         for (int i = 0; i < 4; i++)
         {
           colors.add(r);
@@ -1242,9 +1249,9 @@ public class TimeGraph extends ConstraintLayout
           indices.add((short)(indexStart + 2));
           indexStart += 4;
 
-          float topR = Color.red(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
-          float topG = Color.green(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
-          float topB = Color.blue(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+          float topR = Color.red(m_rangeHighlightingColors[indexReached - 1]) / 255.0f;
+          float topG = Color.green(m_rangeHighlightingColors[indexReached - 1]) / 255.0f;
+          float topB = Color.blue(m_rangeHighlightingColors[indexReached - 1]) / 255.0f;
           for (int i = 0; i < 4; i++)
           {
             colors.add(topR);
@@ -1275,9 +1282,9 @@ public class TimeGraph extends ConstraintLayout
       indices.add((short)(indexStart + 2));
       indexStart += 3;
 
-      float r = Color.red(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
-      float g = Color.green(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
-      float b = Color.blue(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+      float r = Color.red(m_rangeHighlightingColors[indexReached - 1]) / 255.0f;
+      float g = Color.green(m_rangeHighlightingColors[indexReached - 1]) / 255.0f;
+      float b = Color.blue(m_rangeHighlightingColors[indexReached - 1]) / 255.0f;
       for (int i = 0; i < 3; i++)
       {
         colors.add(r);
@@ -1325,9 +1332,9 @@ public class TimeGraph extends ConstraintLayout
       coords.add(firstNormalisedRangeValue);
       coords.add(startXCoord);
       coords.add(firstNormalisedRangeValue);
-      float firstR = Color.red(rangeHighlightingColors[0]) / (float)Byte.MAX_VALUE;
-      float firstG = Color.green(rangeHighlightingColors[0]) / (float)Byte.MAX_VALUE;
-      float firstB = Color.blue(rangeHighlightingColors[0]) / (float)Byte.MAX_VALUE;
+      float firstR = Color.red(rangeHighlightingColors[0]) / 255.0f;
+      float firstG = Color.green(rangeHighlightingColors[0]) / 255.0f;
+      float firstB = Color.blue(rangeHighlightingColors[0]) / 255.0f;
       for (int j = 0; j < 2; j++)
       {
         colors.add(firstR);
@@ -1362,12 +1369,12 @@ public class TimeGraph extends ConstraintLayout
         indices.add((short)(indexStart + 3));
         indexStart += 2;
 
-        float bottomR = Color.red(rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
-        float bottomG = Color.green(rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
-        float bottomB = Color.blue(rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
-        float topR = lerp(Color.red(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE, bottomR, colorInterpolation);
-        float topG = lerp(Color.green(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE, bottomG, colorInterpolation);
-        float topB = lerp(Color.blue(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE, bottomB, colorInterpolation);
+        float bottomR = Color.red(rangeHighlightingColors[indexReached - 1]) / 255.0f;
+        float bottomG = Color.green(rangeHighlightingColors[indexReached - 1]) / 255.0f;
+        float bottomB = Color.blue(rangeHighlightingColors[indexReached - 1]) / 255.0f;
+        float topR = lerp(Color.red(rangeHighlightingColors[indexReached]) / 255.0f, bottomR, colorInterpolation);
+        float topG = lerp(Color.green(rangeHighlightingColors[indexReached]) / 255.0f, bottomG, colorInterpolation);
+        float topB = lerp(Color.blue(rangeHighlightingColors[indexReached]) / 255.0f, bottomB, colorInterpolation);
         for (int i = 0; i < 2; i++)
         {
           colors.add(topR);
@@ -1399,9 +1406,9 @@ public class TimeGraph extends ConstraintLayout
           indices.add((short)(indexStart + 3));
           indexStart += 2;
 
-          float topR = Color.red(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE;
-          float topG = Color.green(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE;
-          float topB = Color.blue(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE;
+          float topR = Color.red(rangeHighlightingColors[indexReached]) / 255.0f;
+          float topG = Color.green(rangeHighlightingColors[indexReached]) / 255.0f;
+          float topB = Color.blue(rangeHighlightingColors[indexReached]) / 255.0f;
           for (int i = 0; i < 2; i++)
           {
             colors.add(topR);
@@ -1427,12 +1434,12 @@ public class TimeGraph extends ConstraintLayout
       float normalisedRangeStart = (rangeHighlightingValues[indexReached - 1] - m_valueAxisMin) / valueDifference;
       float normalisedRangeEnd = (rangeHighlightingValues[indexReached] - m_valueAxisMin) / valueDifference;
       float colorInterpolation = (normalisedRangeEnd - endYCoord) / (normalisedRangeEnd - normalisedRangeStart);
-      float bottomR = Color.red(rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
-      float bottomG = Color.green(rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
-      float bottomB = Color.blue(rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
-      float topR = lerp(Color.red(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE, bottomR, colorInterpolation);
-      float topG = lerp(Color.green(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE, bottomG, colorInterpolation);
-      float topB = lerp(Color.blue(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE, bottomB, colorInterpolation);
+      float bottomR = Color.red(rangeHighlightingColors[indexReached - 1]) / 255.0f;
+      float bottomG = Color.green(rangeHighlightingColors[indexReached - 1]) / 255.0f;
+      float bottomB = Color.blue(rangeHighlightingColors[indexReached - 1]) / 255.0f;
+      float topR = lerp(Color.red(rangeHighlightingColors[indexReached]) / 255.0f, bottomR, colorInterpolation);
+      float topG = lerp(Color.green(rangeHighlightingColors[indexReached]) / 255.0f, bottomG, colorInterpolation);
+      float topB = lerp(Color.blue(rangeHighlightingColors[indexReached]) / 255.0f, bottomB, colorInterpolation);
       colors.add(topR);
       colors.add(topG);
       colors.add(topB);

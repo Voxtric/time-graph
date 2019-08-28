@@ -5,6 +5,8 @@ import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
+import androidx.annotation.ColorInt;
+
 import com.voxtric.timegraph.TimeGraph;
 
 public class GraphSurface extends GLSurfaceView
@@ -117,9 +119,9 @@ public class GraphSurface extends GLSurfaceView
     return handled;
   }
 
-  public LineStripRenderable addLineStrip(int drawOrder, float[] coords)
+  public LineStripRenderable addLineStrip(int drawOrder, float[] coords, @ColorInt int color)
   {
-    final LineStripRenderable lineStrip = new LineStripRenderable(drawOrder, coords);
+    final LineStripRenderable lineStrip = new LineStripRenderable(drawOrder, coords, color);
     queueEvent(new Runnable()
     {
       @Override
@@ -132,9 +134,9 @@ public class GraphSurface extends GLSurfaceView
     return lineStrip;
   }
 
-  public LineRenderable addLine(int drawOrder, float[] coords)
+  public LineRenderable addLine(int drawOrder, float[] coords, @ColorInt int color)
   {
-    final LineRenderable line = new LineRenderable(drawOrder, coords);
+    final LineRenderable line = new LineRenderable(drawOrder, coords, color);
     queueEvent(new Runnable()
     {
       @Override

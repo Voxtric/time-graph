@@ -2,11 +2,13 @@ package com.voxtric.timegraph.opengl;
 
 import android.opengl.GLES20;
 
+import androidx.annotation.ColorInt;
+
 public class LineStripRenderable extends TransformableRenderable
 {
-  LineStripRenderable(int drawOrder, float[] coords)
+  LineStripRenderable(int drawOrder, float[] coords, @ColorInt int color)
   {
-    super(drawOrder, coords);
+    super(drawOrder, coords, color);
   }
 
   @Override
@@ -31,6 +33,9 @@ public class LineStripRenderable extends TransformableRenderable
 
     int yScaleHandle = GLES20.glGetUniformLocation(shaderHandle, "yScale");
     GLES20.glUniform1f(yScaleHandle, m_yScale);
+
+    int colorHandle = GLES20.glGetUniformLocation(shaderHandle, "color");
+    GLES20.glUniform4fv(colorHandle, 1, m_colorBuffer);
 
     GLES20.glDrawArrays(GLES20.GL_LINE_STRIP, 0, getVertexCount());
 

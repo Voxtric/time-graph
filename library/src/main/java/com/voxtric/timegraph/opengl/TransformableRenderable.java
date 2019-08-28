@@ -1,6 +1,14 @@
 package com.voxtric.timegraph.opengl;
 
+import android.graphics.Color;
 import android.opengl.GLES20;
+import android.util.Log;
+
+import androidx.annotation.ColorInt;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 
 abstract class TransformableRenderable extends Renderable
 {
@@ -18,9 +26,10 @@ abstract class TransformableRenderable extends Renderable
       "}";
   private static final String FRAGMENT_SHADER_CODE =
       "precision mediump float;" +
+      "uniform vec4 color;" +
 
       "void main() {" +
-      "  gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);" +
+      "  gl_FragColor = color;" +
       "}";
   private static int s_shaderHandle = -1;
 
@@ -28,10 +37,24 @@ abstract class TransformableRenderable extends Renderable
   float m_xScale = 1.0f;
   float m_xScalePosition = 0.0f;
   float m_yScale = 1.0f;
+  FloatBuffer m_colorBuffer;
 
-  TransformableRenderable(int drawOrder, float[] coords)
+  TransformableRenderable(int drawOrder, float[] coords, @ColorInt int color)
   {
     super(drawOrder, coords);
+
+    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(COLORS_PER_VERTEX * (Float.SIZE / Byte.SIZE));
+    byteBuffer.order(ByteOrder.nativeOrder());
+
+    float[] colors = new float[] {
+        Color.red(color) / 255.0f,
+        Color.green(color) / 255.0f,
+        Color.blue(color) / 255.0f,
+        Color.alpha(color) / 255.0f
+    };
+    m_colorBuffer = byteBuffer.asFloatBuffer();
+    m_colorBuffer.put(colors);
+    m_colorBuffer.position(0);
   }
 
   public void setXOffset(float xOffset)
@@ -48,6 +71,19 @@ abstract class TransformableRenderable extends Renderable
   public void setYScale(float yScale)
   {
     m_yScale = yScale;
+  }
+
+  public void setColor(@ColorInt int color)
+  {
+    float[] colors = new float[] {
+        Color.red(color) / 255.0f,
+        Color.green(color) / 255.0f,
+        Color.blue(color) / 255.0f,
+        Color.alpha(color) / 255.0f
+    };
+    m_colorBuffer.clear();
+    m_colorBuffer.put(colors);
+    m_colorBuffer.position(0);
   }
 
   static int getShaderHandle()

@@ -1,5 +1,6 @@
 package com.voxtric.timegraph.opengl;
 
+import android.graphics.Color;
 import android.opengl.GLES20;
 
 import java.nio.ByteBuffer;
@@ -41,7 +42,7 @@ public class MeshRenderable extends TransformableRenderable
 
   MeshRenderable(int drawOrder, float[] coords, short[] indices, float[] colors)
   {
-    super(drawOrder, coords);
+    super(drawOrder, coords, Color.TRANSPARENT);
 
     ByteBuffer byteBuffer = ByteBuffer.allocateDirect(indices.length * (Short.SIZE / Byte.SIZE));
     byteBuffer.order(ByteOrder.nativeOrder());
