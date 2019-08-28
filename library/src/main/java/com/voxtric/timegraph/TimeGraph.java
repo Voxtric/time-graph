@@ -54,6 +54,8 @@ public class TimeGraph extends ConstraintLayout
   private static final @ColorInt int DEFAULT_NO_DATA_TEXT_COLOR = Color.BLACK;
 
   private static final boolean DEFAULT_SHOW_REFRESH_PROGRESS = true;
+  private static final @ColorInt int DEFAULT_GRAPH_BACKGROUND_COLOR = Color.parseColor("#EFF0F1");
+  private static final @ColorInt int DEFAULT_DATA_LINE_COLOR = Color.BLACK;
 
   private static final boolean DEFAULT_ALLOW_SCROLL = true;
   private static final boolean DEFAULT_ALLOW_SCALE = true;
@@ -93,6 +95,8 @@ public class TimeGraph extends ConstraintLayout
   private @ColorInt int m_noDataTextColor = DEFAULT_NO_DATA_TEXT_COLOR;
 
   private boolean m_showRefreshProgress = DEFAULT_SHOW_REFRESH_PROGRESS;
+  private @ColorInt int m_graphBackgroundColor = DEFAULT_GRAPH_BACKGROUND_COLOR;
+  private @ColorInt int m_dataLineColor = DEFAULT_DATA_LINE_COLOR;
 
   private boolean m_allowScroll = DEFAULT_ALLOW_SCROLL;
   private boolean m_allowScale = DEFAULT_ALLOW_SCALE;
@@ -179,6 +183,8 @@ public class TimeGraph extends ConstraintLayout
     state.putInt("m_noDataTextColor", m_noDataTextColor);
 
     state.putBoolean("m_showRefreshProgress", m_showRefreshProgress);
+    state.putInt("m_graphBackgroundColor", m_graphBackgroundColor);
+    state.putInt("m_dataLineColor", m_dataLineColor);
 
     state.putBoolean("m_allowScroll", m_allowScroll);
     state.putBoolean("m_allowScale", m_allowScale);
@@ -225,6 +231,8 @@ public class TimeGraph extends ConstraintLayout
       setNoDataTextColor(bundle.getInt("m_noDataTextColor"));
 
       setShowRefreshProgress(bundle.getBoolean("m_showRefreshProgress"));
+      setGraphBackgroundColor(bundle.getInt("m_graphBackgroundColor"));
+      setDataLineColor(bundle.getInt("m_dataLineColor"));
 
       setAllowScroll(bundle.getBoolean("m_allowScroll"));
       setAllowScale(bundle.getBoolean("m_allowScale"));
@@ -551,6 +559,32 @@ public class TimeGraph extends ConstraintLayout
   public boolean getShowRefreshProgress()
   {
     return m_showRefreshProgress;
+  }
+
+  public void setGraphBackgroundColor(@ColorInt int color)
+  {
+    m_graphBackgroundColor = color;
+    m_graphSurfaceView.setBackgroundColor(color);
+  }
+
+  public @ColorInt int getGraphBackgroundColor()
+  {
+    return m_graphSurfaceView.getBackgroundColor();
+  }
+
+  public void setDataLineColor(@ColorInt int color)
+  {
+    m_dataLineColor = color;
+    if (m_dataLineStrip != null)
+    {
+      m_dataLineStrip.setColor(m_dataLineColor);
+      m_graphSurfaceView.requestRender();
+    }
+  }
+
+  public @ColorInt int getDataLineColor()
+  {
+    return m_dataLineColor;
   }
 
   public void setAllowScroll(boolean allow)
@@ -1021,6 +1055,7 @@ public class TimeGraph extends ConstraintLayout
     }
     LineStripRenderable oldDataLine = m_dataLineStrip;
     m_dataLineStrip = m_graphSurfaceView.addLineStrip(1, coords, Color.BLACK);
+    m_dataLineStrip.setColor(m_dataLineColor);
     m_dataLineStrip.setYScale(startingYScale);
     if (oldDataLine != null)
     {
@@ -1685,6 +1720,8 @@ public class TimeGraph extends ConstraintLayout
       m_noDataTextColor = attributes.getColor(R.styleable.TimeGraph_noData_textColor, DEFAULT_NO_DATA_TEXT_COLOR);
 
       m_showRefreshProgress = attributes.getBoolean(R.styleable.TimeGraph_showRefreshProgress, DEFAULT_SHOW_REFRESH_PROGRESS);
+      m_graphBackgroundColor = attributes.getInt(R.styleable.TimeGraph_graphBackgroundColor, DEFAULT_GRAPH_BACKGROUND_COLOR);
+      m_dataLineColor = attributes.getInt(R.styleable.TimeGraph_dataLineColor, DEFAULT_DATA_LINE_COLOR);
 
       m_allowScroll = attributes.getBoolean(R.styleable.TimeGraph_allowScroll, DEFAULT_ALLOW_SCROLL);
       m_allowScale = attributes.getBoolean(R.styleable.TimeGraph_allowScale, DEFAULT_ALLOW_SCALE);
@@ -1704,7 +1741,7 @@ public class TimeGraph extends ConstraintLayout
   {
     m_graphSurfaceView = new GraphSurface(context);
     m_graphSurfaceView.setId(R.id.graph_surface);
-    m_graphSurfaceView.initialise(this);
+    m_graphSurfaceView.initialise(this, m_graphBackgroundColor);
     addView(m_graphSurfaceView);
 
     m_valueAxisMinView = new TextView(context);

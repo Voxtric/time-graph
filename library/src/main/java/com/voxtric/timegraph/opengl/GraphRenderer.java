@@ -1,7 +1,10 @@
 package com.voxtric.timegraph.opengl;
 
+import android.graphics.Color;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+
+import androidx.annotation.ColorInt;
 
 import java.util.ArrayList;
 
@@ -11,11 +14,20 @@ import javax.microedition.khronos.opengles.GL10;
 public class GraphRenderer implements GLSurfaceView.Renderer
 {
   private ArrayList<Renderable> m_renderables = new ArrayList<>();
+  private @ColorInt int m_clearColor;
+
+  GraphRenderer(@ColorInt int clearColor)
+  {
+    m_clearColor = clearColor;
+  }
 
   @Override
   public void onSurfaceCreated(GL10 unused, EGLConfig config)
   {
-    GLES20.glClearColor(0.9f, 0.9f, 0.9f, 1.0f);
+    GLES20.glClearColor(Color.red(m_clearColor) / 255.0f,
+                        Color.green(m_clearColor) / 255.0f,
+                        Color.blue(m_clearColor) / 255.0f,
+                        Color.alpha(m_clearColor) / 255.0f);
   }
 
   @Override
@@ -32,6 +44,20 @@ public class GraphRenderer implements GLSurfaceView.Renderer
     {
       renderable.draw();
     }
+  }
+
+  void setClearColor(@ColorInt int clearColor)
+  {
+    m_clearColor = clearColor;
+    GLES20.glClearColor(Color.red(clearColor) / 255.0f,
+                        Color.green(clearColor) / 255.0f,
+                        Color.blue(clearColor) / 255.0f,
+                        Color.alpha(clearColor) / 255.0f);
+  }
+
+  @ColorInt int getClearColor()
+  {
+    return m_clearColor;
   }
 
   void addRenderable(Renderable renderable)
@@ -56,7 +82,7 @@ public class GraphRenderer implements GLSurfaceView.Renderer
     }
   }
 
-  public void removeRenderable(Renderable renderable)
+  void removeRenderable(Renderable renderable)
   {
     m_renderables.remove(renderable);
   }

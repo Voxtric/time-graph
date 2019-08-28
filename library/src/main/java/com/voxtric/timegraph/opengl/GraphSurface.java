@@ -29,13 +29,13 @@ public class GraphSurface extends GLSurfaceView
     super(context, attrs);
   }
 
-  public void initialise(TimeGraph timeGraph)
+  public void initialise(TimeGraph timeGraph, @ColorInt int backgroundColor)
   {
     m_timeGraph = timeGraph;
 
     setEGLContextClientVersion(2);
 
-    m_renderer = new GraphRenderer();
+    m_renderer = new GraphRenderer(backgroundColor);
     setRenderer(m_renderer);
     setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
   }
@@ -117,6 +117,24 @@ public class GraphSurface extends GLSurfaceView
     }
 
     return handled;
+  }
+
+  public void setBackgroundColor(final @ColorInt int color)
+  {
+    queueEvent(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        m_renderer.setClearColor(color);
+        requestRender();
+      }
+    });
+  }
+
+  public @ColorInt int getBackgroundColor()
+  {
+    return m_renderer.getClearColor();
   }
 
   public LineStripRenderable addLineStrip(int drawOrder, float[] coords, @ColorInt int color)

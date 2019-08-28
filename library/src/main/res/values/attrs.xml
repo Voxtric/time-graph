@@ -18,6 +18,8 @@
         <attr name="noData_textColor" format="color"/>
 
         <attr name="showRefreshProgress" format="boolean"/>
+        <attr name="graphBackgroundColor" format="color"/>
+        <attr name="dataLineColor" format="color"/>
 
         <attr name="allowScroll" format="boolean"/>
         <attr name="allowScale" format="boolean"/>
