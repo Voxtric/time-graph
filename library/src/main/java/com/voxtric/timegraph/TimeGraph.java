@@ -1084,12 +1084,13 @@ public class TimeGraph extends ConstraintLayout
     ArrayList<Short> indices = new ArrayList<>();
     ArrayList<Float> colors = new ArrayList<>();
     short indexStart = 0;
-    for (int i = 0; i < data.length - 1; i++)
+
+    for (int dataIndex = 0; dataIndex < data.length - 1; dataIndex++)
     {
-      GraphData start = data[i];
+      GraphData start = data[dataIndex];
       float startXCoord = (start.timestamp - m_startTimestamp) / timeDifference;
       float startYCoord = (start.value - m_valueAxisMin) / valueDifference;
-      GraphData end = data[i + 1];
+      GraphData end = data[dataIndex + 1];
       float endXCoord = (end.timestamp - m_startTimestamp) / timeDifference;
       float endYCoord = (end.value - m_valueAxisMin) / valueDifference;
       if (endYCoord < startYCoord)
@@ -1102,145 +1103,114 @@ public class TimeGraph extends ConstraintLayout
         endYCoord = tempYCoord;
       }
 
-      float lastX = startXCoord;
-      float lastY = startYCoord;
-      for (int j = 1; j < m_rangeHighlightingValues.length; j++)
+      int indexReached = 1;
+      boolean finish = startYCoord <= 0.0f;
+      for (; indexReached < m_rangeHighlightingValues.length && !finish; indexReached++)
       {
-        float normalisedRangeValue = (m_rangeHighlightingValues[j] - m_valueAxisMin) / valueDifference;
-        PointF intersection = new PointF();
-        if (getRangeIntersection(startXCoord, startYCoord, endXCoord, endYCoord, normalisedRangeValue, intersection))
-        {
-          float r = Color.red(m_rangeHighlightingColors[j - 1]) / (float)Byte.MAX_VALUE;
-          float g = Color.green(m_rangeHighlightingColors[j - 1]) / (float)Byte.MAX_VALUE;
-          float b = Color.blue(m_rangeHighlightingColors[j - 1]) / (float)Byte.MAX_VALUE;
-
-          // Intersect quad
-          coords.add(lastX);
-          coords.add(lastY);
-          coords.add(intersection.x);
-          coords.add(intersection.y);
-          coords.add(endXCoord);
-          coords.add(intersection.y);
-          coords.add(endXCoord);
-          coords.add(lastY);
-
-          indices.add(indexStart);
-          indices.add((short)(indexStart + 1));
-          indices.add((short)(indexStart + 2));
-          indices.add(indexStart);
-          indices.add((short)(indexStart + 2));
-          indices.add((short)(indexStart + 3));
-          indexStart += 4;
-
-          colors.add(r);
-          colors.add(g);
-          colors.add(b);
-          colors.add(1.0f);
-          colors.add(r);
-          colors.add(g);
-          colors.add(b);
-          colors.add(1.0f);
-          colors.add(r);
-          colors.add(g);
-          colors.add(b);
-          colors.add(1.0f);
-          colors.add(r);
-          colors.add(g);
-          colors.add(b);
-          colors.add(1.0f);
-
-          lastX = intersection.x;
-          lastY = intersection.y;
-        }
-      }
-
-      int colorIndex = -1;
-      for (int j = 0; j < m_rangeHighlightingValues.length - 1 && colorIndex == -1; j++)
-      {
-        float normalisedRangeStart = (m_rangeHighlightingValues[j] - m_valueAxisMin) / valueDifference;
-        float normalisedRangeEnd = (m_rangeHighlightingValues[j + 1] - m_valueAxisMin) / valueDifference;
-        if (normalisedRangeEnd > endYCoord)
-        {
-          colorIndex = j;
-        }
-      }
-
-      if (colorIndex != -1)
-      {
-        // Peak
-        coords.add(lastX);
-        coords.add(lastY);
-        coords.add(endXCoord);
-        coords.add(endYCoord);
-        coords.add(endXCoord);
-        coords.add(lastY);
-
-        indices.add(indexStart);
-        indices.add((short)(indexStart + 1));
-        indices.add((short)(indexStart + 2));
-        indexStart += 3;
-
-        float r = Color.red(m_rangeHighlightingColors[colorIndex]) / (float)Byte.MAX_VALUE;
-        float g = Color.green(m_rangeHighlightingColors[colorIndex]) / (float)Byte.MAX_VALUE;
-        float b = Color.blue(m_rangeHighlightingColors[colorIndex]) / (float)Byte.MAX_VALUE;
-        colors.add(r);
-        colors.add(g);
-        colors.add(b);
-        colors.add(1.0f);
-        colors.add(r);
-        colors.add(g);
-        colors.add(b);
-        colors.add(1.0f);
-        colors.add(r);
-        colors.add(g);
-        colors.add(b);
-        colors.add(1.0f);
-      }
-
-      boolean finish = false;
-      for (int j = 0; j < m_rangeHighlightingValues.length - 1 && !finish; j++)
-      {
-        float normalisedRangeStart = (m_rangeHighlightingValues[j] - m_valueAxisMin) / valueDifference;
-        float normalisedRangeEnd = (m_rangeHighlightingValues[j + 1] - m_valueAxisMin) / valueDifference;
+        float normalisedRangeStart = (m_rangeHighlightingValues[indexReached - 1] - m_valueAxisMin) / valueDifference;
+        float normalisedRangeEnd = (m_rangeHighlightingValues[indexReached] - m_valueAxisMin) / valueDifference;
         if (normalisedRangeEnd > startYCoord)
         {
           normalisedRangeEnd = startYCoord;
           finish = true;
         }
-        float r = Color.red(m_rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
-        float g = Color.green(m_rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
-        float b = Color.blue(m_rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
 
         // Under quad
         coords.add(startXCoord);
         coords.add(normalisedRangeStart);
-        coords.add(startXCoord);
-        coords.add(normalisedRangeEnd);
-        coords.add(endXCoord);
-        coords.add(normalisedRangeEnd);
         coords.add(endXCoord);
         coords.add(normalisedRangeStart);
+        coords.add(endXCoord);
+        coords.add(normalisedRangeEnd);
+        coords.add(startXCoord);
+        coords.add(normalisedRangeEnd);
 
         indices.add(indexStart);
         indices.add((short)(indexStart + 1));
         indices.add((short)(indexStart + 2));
         indices.add(indexStart);
-        indices.add((short)(indexStart + 2));
         indices.add((short)(indexStart + 3));
+        indices.add((short)(indexStart + 2));
         indexStart += 4;
 
-        colors.add(r);
-        colors.add(g);
-        colors.add(b);
-        colors.add(1.0f);
-        colors.add(r);
-        colors.add(g);
-        colors.add(b);
-        colors.add(1.0f);
-        colors.add(r);
-        colors.add(g);
-        colors.add(b);
-        colors.add(1.0f);
+        float r = Color.red(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+        float g = Color.green(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+        float b = Color.blue(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+        for (int i = 0; i < 4; i++)
+        {
+          colors.add(r);
+          colors.add(g);
+          colors.add(b);
+          colors.add(1.0f);
+        }
+      }
+
+      indexReached--;
+      float lastX = startXCoord;
+      float lastY = startYCoord;
+      for (; indexReached < m_rangeHighlightingValues.length; indexReached++)
+      {
+        float normalisedRangeStart = (m_rangeHighlightingValues[indexReached - 1] - m_valueAxisMin) / valueDifference;
+        float normalisedRangeEnd = (m_rangeHighlightingValues[indexReached] - m_valueAxisMin) / valueDifference;
+        PointF intersection = new PointF();
+        if (getRangeIntersection(startXCoord, startYCoord, endXCoord, endYCoord, normalisedRangeEnd, intersection))
+        {
+          // Intersect quad.
+          coords.add(lastX);
+          coords.add(lastY);
+          coords.add(endXCoord);
+          coords.add(lastY);
+          coords.add(endXCoord);
+          coords.add(intersection.y);
+          coords.add(intersection.x);
+          coords.add(intersection.y);
+
+          indices.add(indexStart);
+          indices.add((short)(indexStart + 1));
+          indices.add((short)(indexStart + 2));
+          indices.add(indexStart);
+          indices.add((short)(indexStart + 3));
+          indices.add((short)(indexStart + 2));
+          indexStart += 4;
+
+          float topR = Color.red(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+          float topG = Color.green(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+          float topB = Color.blue(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+          for (int i = 0; i < 4; i++)
+          {
+            colors.add(topR);
+            colors.add(topG);
+            colors.add(topB);
+            colors.add(1.0f);
+          }
+
+          lastX = intersection.x;
+          lastY = intersection.y;
+        }
+        else
+        {
+          break;
+        }
+      }
+
+      // Peak tri.
+      coords.add(lastX);
+      coords.add(lastY);
+      coords.add(endXCoord);
+      coords.add(lastY);
+      coords.add(endXCoord);
+      coords.add(endYCoord);
+
+      indices.add(indexStart);
+      indices.add((short)(indexStart + 1));
+      indices.add((short)(indexStart + 2));
+      indexStart += 3;
+
+      float r = Color.red(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+      float g = Color.green(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+      float b = Color.blue(m_rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+      for (int i = 0; i < 3; i++)
+      {
         colors.add(r);
         colors.add(g);
         colors.add(b);
