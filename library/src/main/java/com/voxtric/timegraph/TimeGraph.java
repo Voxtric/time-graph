@@ -1024,46 +1024,54 @@ public class TimeGraph extends ConstraintLayout
       rangeHighlightingColors[i] = m_rangeHighlightingColors[i / 2];
     }
 
-    float[] coordArray = new float[(rangeHighlightingValues.length - 1) * 4 * Renderable.COORDS_PER_VERTEX];
+    float[] coordArray = new float[rangeHighlightingValues.length * 2 * Renderable.COORDS_PER_VERTEX];
     short[] indexArray = new short[(rangeHighlightingValues.length - 1) * 6];
-    float[] colorArray = new float[(rangeHighlightingValues.length - 1) * 4 * Renderable.COLORS_PER_VERTEX];
+    float[] colorArray = new float[rangeHighlightingValues.length * 2 * Renderable.COLORS_PER_VERTEX];
 
-    int coordStartIndex = 0;
-    int indexStartIndex = 0;
-    int colorStartIndex = 0;
-    short indexStart = 0;
-    for (int i = 0; i < rangeHighlightingColors.length - 1; i++)
+    float firstNormalisedRangeValue = (rangeHighlightingValues[0] - m_valueAxisMin) / valueDifference;
+    coordArray[0] = -1.0f;
+    coordArray[1] = (firstNormalisedRangeValue * 2.0f) - 1.0f;
+    coordArray[2] = 1.0f;
+    coordArray[3] = (firstNormalisedRangeValue * 2.0f) - 1.0f;
+    for (int i = 0; i < 2; i++)
     {
-      float normalisedRangeStart = (rangeHighlightingValues[i] - m_valueAxisMin) / valueDifference;
-      float normalisedRangeEnd = (rangeHighlightingValues[i + 1] - m_valueAxisMin) / valueDifference;
+      colorArray[(i * 4)] = Color.red(rangeHighlightingColors[0]) / (float)Byte.MAX_VALUE;
+      colorArray[(i * 4) + 1] = Color.green(rangeHighlightingColors[0]) / (float)Byte.MAX_VALUE;
+      colorArray[(i * 4) + 2] = Color.blue(rangeHighlightingColors[0]) / (float)Byte.MAX_VALUE;
+      colorArray[(i * 4) + 3] = 1.0f;
+    }
+    int coordStartIndex = 4;
+    int indexStartIndex = 0;
+    int colorStartIndex = 8;
+
+    short indexStart = 0;
+    for (int i = 1; i < rangeHighlightingColors.length; i++)
+    {
+      float normalisedRangeEnd = (rangeHighlightingValues[i] - m_valueAxisMin) / valueDifference;
       coordArray[coordStartIndex] = -1.0f;
-      coordArray[coordStartIndex + 1] = (normalisedRangeStart * 2.0f) - 1.0f;
+      coordArray[coordStartIndex + 1] = (normalisedRangeEnd * 2.0f) - 1.0f;
       coordArray[coordStartIndex + 2] = 1.0f;
-      coordArray[coordStartIndex + 3] = (normalisedRangeStart * 2.0f) - 1.0f;
-      coordArray[coordStartIndex + 4] = 1.0f;
-      coordArray[coordStartIndex + 5] = (normalisedRangeEnd * 2.0f) - 1.0f;
-      coordArray[coordStartIndex + 6] = -1.0f;
-      coordArray[coordStartIndex + 7] = (normalisedRangeEnd * 2.0f) - 1.0f;
-      coordStartIndex += 8;
+      coordArray[coordStartIndex + 3] = (normalisedRangeEnd * 2.0f) - 1.0f;
+      coordStartIndex += 4;
 
       indexArray[indexStartIndex] = indexStart;
       indexArray[indexStartIndex + 1] = (short)(indexStart + 1);
-      indexArray[indexStartIndex + 2] = (short)(indexStart + 2);
+      indexArray[indexStartIndex + 2] = (short)(indexStart + 3);
       indexArray[indexStartIndex + 3] = indexStart;
-      indexArray[indexStartIndex + 4] = (short)(indexStart + 2);
-      indexArray[indexStartIndex + 5] = (short)(indexStart + 3);
+      indexArray[indexStartIndex + 4] = (short)(indexStart + 3);
+      indexArray[indexStartIndex + 5] = (short)(indexStart + 2);
       indexStartIndex += 6;
 
-      for (int j = 0; j < 4; j++)
+      for (int j = 0; j < 2; j++)
       {
-        colorArray[colorStartIndex] = Color.red(rangeHighlightingColors[i + (j / 2)]) / (float)Byte.MAX_VALUE;
-        colorArray[colorStartIndex + 1] = Color.green(rangeHighlightingColors[i + (j / 2)]) / (float)Byte.MAX_VALUE;
-        colorArray[colorStartIndex + 2] = Color.blue(rangeHighlightingColors[i + (j / 2)]) / (float)Byte.MAX_VALUE;
+        colorArray[colorStartIndex] = Color.red(rangeHighlightingColors[i]) / (float)Byte.MAX_VALUE;
+        colorArray[colorStartIndex + 1] = Color.green(rangeHighlightingColors[i]) / (float)Byte.MAX_VALUE;
+        colorArray[colorStartIndex + 2] = Color.blue(rangeHighlightingColors[i]) / (float)Byte.MAX_VALUE;
         colorArray[colorStartIndex + 3] = 1.0f;
         colorStartIndex += 4;
       }
 
-      indexStart += 4;
+      indexStart += 2;
     }
 
     replaceMesh(startingYScale, coordArray, indexArray, colorArray);
