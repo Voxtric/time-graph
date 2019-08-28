@@ -699,7 +699,7 @@ public class TimeGraph extends ConstraintLayout
           for (int i = 0; i < timeAxisLabelCount; i++)
           {
             int coordsIndex = i * 4;
-            float markerX = (((m_timeAxisLabels.get(i).offset / m_graphSurfaceView.getWidth()) * 2.0f) - 1.0f) + 0.0015f;
+            float markerX = (((m_timeAxisLabels.get(i).offset / m_graphSurfaceView.getWidth()) * 2.0f) - 1.0f) + 0.001f;
             labelMarkerCoords[coordsIndex] = markerX;
             labelMarkerCoords[coordsIndex + 1] = -1.0f;
             labelMarkerCoords[coordsIndex + 2] = markerX;
