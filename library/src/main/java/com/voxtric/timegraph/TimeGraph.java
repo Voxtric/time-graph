@@ -58,8 +58,16 @@ public class TimeGraph extends ConstraintLayout
   private static final float HALF_FADE_MULTIPLIER = 0.05f;
 
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef({ DISPLAY_MODE_BACKGROUND, DISPLAY_MODE_BACKGROUND_WITH_FADE, DISPLAY_MODE_UNDERLINE, DISPLAY_MODE_UNDERLINE_WITH_FADE})
-  @interface DisplayMode {}
+  @IntDef({
+      DISPLAY_MODE_BACKGROUND,
+      DISPLAY_MODE_BACKGROUND_WITH_FADE,
+      DISPLAY_MODE_UNDERLINE,
+      DISPLAY_MODE_UNDERLINE_WITH_FADE
+  })
+  @interface DisplayMode
+  {
+  }
+
   public static final int DISPLAY_MODE_BACKGROUND = 0;
   public static final int DISPLAY_MODE_BACKGROUND_WITH_FADE = 1;
   public static final int DISPLAY_MODE_UNDERLINE = 2;
@@ -118,7 +126,8 @@ public class TimeGraph extends ConstraintLayout
 
   private float[] m_rangeHighlightingValues = null;
   private int[] m_rangeHighlightingColors = null;
-  private @DisplayMode int m_rangeHighlightingDisplayMode = DISPLAY_MODE_BACKGROUND;
+  private @DisplayMode
+  int m_rangeHighlightingDisplayMode = DISPLAY_MODE_BACKGROUND;
 
   public TimeGraph(Context context)
   {
@@ -604,8 +613,16 @@ public class TimeGraph extends ConstraintLayout
 
     ConstraintSet constraintSet = new ConstraintSet();
     constraintSet.clone(TimeGraph.this);
-    constraintSet.connect(m_graphSurfaceView.getId(), ConstraintSet.TOP, ConstraintSet.PARENT_ID, ConstraintSet.TOP, topMargin);
-    constraintSet.connect(m_timeAxisLabelsLayoutView.getId(), ConstraintSet.BOTTOM, ConstraintSet.PARENT_ID, ConstraintSet.BOTTOM, bottomMargin);
+    constraintSet.connect(m_graphSurfaceView.getId(),
+                          ConstraintSet.TOP,
+                          ConstraintSet.PARENT_ID,
+                          ConstraintSet.TOP,
+                          topMargin);
+    constraintSet.connect(m_timeAxisLabelsLayoutView.getId(),
+                          ConstraintSet.BOTTOM,
+                          ConstraintSet.PARENT_ID,
+                          ConstraintSet.BOTTOM,
+                          bottomMargin);
     constraintSet.applyTo(TimeGraph.this);
   }
 
@@ -1238,17 +1255,17 @@ public class TimeGraph extends ConstraintLayout
   {
     float[] rangeHighlightingValues = modifyRangeHighlightingValuesForFade(valueDifference);
     int[] rangeHighlightingColors = modifyRangeHighlightingColorsForFade(rangeHighlightingValues.length);
-
     ArrayList<Float> coords = new ArrayList<>();
     ArrayList<Short> indices = new ArrayList<>();
     ArrayList<Float> colors = new ArrayList<>();
     short indexStart = 0;
-    for (int i = 0; i < data.length - 1; i++)
+
+    for (int dataIndex = 0; dataIndex < data.length - 1; dataIndex++)
     {
-      GraphData start = data[i];
+      GraphData start = data[dataIndex];
       float startXCoord = (start.timestamp - m_startTimestamp) / timeDifference;
       float startYCoord = (start.value - m_valueAxisMin) / valueDifference;
-      GraphData end = data[i + 1];
+      GraphData end = data[dataIndex + 1];
       float endXCoord = (end.timestamp - m_startTimestamp) / timeDifference;
       float endYCoord = (end.value - m_valueAxisMin) / valueDifference;
       if (endYCoord < startYCoord)
@@ -1261,196 +1278,130 @@ public class TimeGraph extends ConstraintLayout
         endYCoord = tempYCoord;
       }
 
-      float lastX = startXCoord;
-      float lastY = startYCoord;
-      int lastIndex = -1;
-      for (int j = 0; j < rangeHighlightingValues.length - 1 && lastIndex == -1; j++)
+      int indexReached = 1;
+      boolean finish = startYCoord <= 0.0f;
+      if (!finish)
       {
-        float normalisedRangeEnd = (rangeHighlightingValues[j + 1] - m_valueAxisMin) / valueDifference;
-        if (normalisedRangeEnd > startYCoord)
+        indexStart = (short)(coords.size() / 2);
+
+        float firstNormalisedRangeValue = (rangeHighlightingValues[0] - m_valueAxisMin) / valueDifference;
+        coords.add(endXCoord);
+        coords.add(firstNormalisedRangeValue);
+        coords.add(startXCoord);
+        coords.add(firstNormalisedRangeValue);
+        float firstR = Color.red(rangeHighlightingColors[0]) / (float)Byte.MAX_VALUE;
+        float firstG = Color.green(rangeHighlightingColors[0]) / (float)Byte.MAX_VALUE;
+        float firstB = Color.blue(rangeHighlightingColors[0]) / (float)Byte.MAX_VALUE;
+        for (int j = 0; j < 2; j++)
         {
-          lastIndex = j;
+          colors.add(firstR);
+          colors.add(firstB);
+          colors.add(firstG);
+          colors.add(1.0f);
         }
-      }
 
-      for (int j = 1; j < rangeHighlightingValues.length; j++)
-      {
-        float normalisedRangeStart = (rangeHighlightingValues[j - 1] - m_valueAxisMin) / valueDifference;
-        float normalisedRangeEnd = (rangeHighlightingValues[j] - m_valueAxisMin) / valueDifference;
-        PointF intersection = new PointF();
-        if (getRangeIntersection(startXCoord, startYCoord, endXCoord, endYCoord, normalisedRangeEnd, intersection))
+        for (; indexReached < rangeHighlightingValues.length && !finish; indexReached++)
         {
+          float colorInterpolation = 0.0f;
+          float normalisedRangeStart = (rangeHighlightingValues[indexReached - 1] - m_valueAxisMin) / valueDifference;
+          float normalisedRangeEnd = (rangeHighlightingValues[indexReached] - m_valueAxisMin) / valueDifference;
+          if (normalisedRangeEnd > startYCoord)
+          {
+            colorInterpolation = (normalisedRangeEnd - startYCoord) / (normalisedRangeEnd - normalisedRangeStart);
+            normalisedRangeEnd = startYCoord;
+            finish = true;
+          }
 
-          // Intersect quad
-          coords.add(lastX);
-          coords.add(lastY);
-          coords.add(intersection.x);
-          coords.add(intersection.y);
+          // Under quad
           coords.add(endXCoord);
-          coords.add(intersection.y);
-          coords.add(endXCoord);
-          coords.add(lastY);
+          coords.add(normalisedRangeEnd);
+          coords.add(startXCoord);
+          coords.add(normalisedRangeEnd);
 
           indices.add(indexStart);
           indices.add((short)(indexStart + 1));
-          indices.add((short)(indexStart + 2));
+          indices.add((short)(indexStart + 3));
           indices.add(indexStart);
           indices.add((short)(indexStart + 2));
           indices.add((short)(indexStart + 3));
-          indexStart += 4;
+          indexStart += 2;
 
-          float bottomR = Color.red(rangeHighlightingColors[lastIndex]) / (float)Byte.MAX_VALUE;
-          float bottomG = Color.green(rangeHighlightingColors[lastIndex]) / (float)Byte.MAX_VALUE;
-          float bottomB = Color.blue(rangeHighlightingColors[lastIndex]) / (float)Byte.MAX_VALUE;
-          float topR = Color.red(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
-          float topG = Color.green(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
-          float topB = Color.blue(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
-
-          if (normalisedRangeEnd > endYCoord)
+          float bottomR = Color.red(rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+          float bottomG = Color.green(rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+          float bottomB = Color.blue(rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+          float topR = lerp(Color.red(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE, bottomR, colorInterpolation);
+          float topG = lerp(Color.green(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE, bottomG, colorInterpolation);
+          float topB = lerp(Color.blue(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE, bottomB, colorInterpolation);
+          for (int i = 0; i < 2; i++)
           {
-            float colorInterpolation = (normalisedRangeEnd - endYCoord) / (normalisedRangeEnd - normalisedRangeStart);
-            topR = lerp(topR, bottomR, colorInterpolation);
-            topG = lerp(topG, bottomG, colorInterpolation);
-            topB = lerp(topB, bottomB, colorInterpolation);
+            colors.add(topR);
+            colors.add(topG);
+            colors.add(topB);
+            colors.add(1.0f);
           }
-
-          if (normalisedRangeStart < startYCoord)
-          {
-            float colorInterpolation = (startYCoord - normalisedRangeStart) / (normalisedRangeEnd - normalisedRangeStart);
-            bottomR = lerp(bottomR, topR, colorInterpolation);
-            bottomG = lerp(bottomG, topG, colorInterpolation);
-            bottomB = lerp(bottomB, topB, colorInterpolation);
-          }
-
-          colors.add(bottomR);
-          colors.add(bottomG);
-          colors.add(bottomB);
-          colors.add(1.0f);
-          colors.add(topR);
-          colors.add(topG);
-          colors.add(topB);
-          colors.add(1.0f);
-          colors.add(topR);
-          colors.add(topG);
-          colors.add(topB);
-          colors.add(1.0f);
-          colors.add(bottomR);
-          colors.add(bottomG);
-          colors.add(bottomB);
-          colors.add(1.0f);
-
-          lastX = intersection.x;
-          lastY = intersection.y;
-          lastIndex = j;
         }
       }
 
-      float normalisedRangeStart = (rangeHighlightingValues[lastIndex] - m_valueAxisMin) / valueDifference;
-      float normalisedRangeEnd = (rangeHighlightingValues[lastIndex + 1] - m_valueAxisMin) / valueDifference;
+      indexReached--;
+      for (; indexReached < rangeHighlightingValues.length; indexReached++)
+      {
+        float normalisedRangeStart = (rangeHighlightingValues[indexReached - 1] - m_valueAxisMin) / valueDifference;
+        float normalisedRangeEnd = (rangeHighlightingValues[indexReached] - m_valueAxisMin) / valueDifference;
+        PointF intersection = new PointF();
+        if (getRangeIntersection(startXCoord, startYCoord, endXCoord, endYCoord, normalisedRangeEnd, intersection))
+        {
+          // Intersect quad.
+          coords.add(endXCoord);
+          coords.add(intersection.y);
+          coords.add(intersection.x);
+          coords.add(intersection.y);
 
-      // Peak
-      coords.add(lastX);
-      coords.add(lastY);
+          indices.add(indexStart);
+          indices.add((short)(indexStart + 1));
+          indices.add((short)(indexStart + 3));
+          indices.add(indexStart);
+          indices.add((short)(indexStart + 2));
+          indices.add((short)(indexStart + 3));
+          indexStart += 2;
+
+          float topR = Color.red(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE;
+          float topG = Color.green(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE;
+          float topB = Color.blue(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE;
+          for (int i = 0; i < 2; i++)
+          {
+            colors.add(topR);
+            colors.add(topG);
+            colors.add(topB);
+            colors.add(1.0f);
+          }
+        }
+        else
+        {
+          break;
+        }
+      }
+
+      // Peak tri.
       coords.add(endXCoord);
       coords.add(endYCoord);
-      coords.add(endXCoord);
-      coords.add(lastY);
 
       indices.add(indexStart);
       indices.add((short)(indexStart + 1));
       indices.add((short)(indexStart + 2));
-      indexStart += 3;
 
-      float bottomR = Color.red(rangeHighlightingColors[lastIndex]) / (float)Byte.MAX_VALUE;
-      float bottomG = Color.green(rangeHighlightingColors[lastIndex]) / (float)Byte.MAX_VALUE;
-      float bottomB = Color.blue(rangeHighlightingColors[lastIndex]) / (float)Byte.MAX_VALUE;
-      float topR = Color.red(rangeHighlightingColors[lastIndex + 1]) / (float)Byte.MAX_VALUE;
-      float topG = Color.green(rangeHighlightingColors[lastIndex + 1]) / (float)Byte.MAX_VALUE;
-      float topB = Color.blue(rangeHighlightingColors[lastIndex + 1]) / (float)Byte.MAX_VALUE;
-
-      if (normalisedRangeEnd > endYCoord)
-      {
-        float colorInterpolation = (normalisedRangeEnd - endYCoord) / (normalisedRangeEnd - normalisedRangeStart);
-        topR = lerp(topR, bottomR, colorInterpolation);
-        topG = lerp(topG, bottomG, colorInterpolation);
-        topB = lerp(topB, bottomB, colorInterpolation);
-      }
-
-      if (normalisedRangeStart < startYCoord)
-      {
-        float colorInterpolation = (startYCoord - normalisedRangeStart) / (normalisedRangeEnd - normalisedRangeStart);
-        bottomR = lerp(bottomR, topR, colorInterpolation);
-        bottomG = lerp(bottomG, topG, colorInterpolation);
-        bottomB = lerp(bottomB, topB, colorInterpolation);
-      }
-
-      colors.add(bottomR);
-      colors.add(bottomG);
-      colors.add(bottomB);
-      colors.add(1.0f);
+      float normalisedRangeStart = (rangeHighlightingValues[indexReached - 1] - m_valueAxisMin) / valueDifference;
+      float normalisedRangeEnd = (rangeHighlightingValues[indexReached] - m_valueAxisMin) / valueDifference;
+      float colorInterpolation = (normalisedRangeEnd - endYCoord) / (normalisedRangeEnd - normalisedRangeStart);
+      float bottomR = Color.red(rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+      float bottomG = Color.green(rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+      float bottomB = Color.blue(rangeHighlightingColors[indexReached - 1]) / (float)Byte.MAX_VALUE;
+      float topR = lerp(Color.red(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE, bottomR, colorInterpolation);
+      float topG = lerp(Color.green(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE, bottomG, colorInterpolation);
+      float topB = lerp(Color.blue(rangeHighlightingColors[indexReached]) / (float)Byte.MAX_VALUE, bottomB, colorInterpolation);
       colors.add(topR);
       colors.add(topG);
       colors.add(topB);
       colors.add(1.0f);
-      colors.add(bottomR);
-      colors.add(bottomG);
-      colors.add(bottomB);
-      colors.add(1.0f);
-
-      boolean finish = false;
-      for (int j = 0; j < rangeHighlightingValues.length - 1 && !finish; j++)
-      {
-        float colorInterpolation = 0.0f;
-        normalisedRangeStart = (rangeHighlightingValues[j] - m_valueAxisMin) / valueDifference;
-        normalisedRangeEnd = (rangeHighlightingValues[j + 1] - m_valueAxisMin) / valueDifference;
-        if (normalisedRangeEnd > startYCoord)
-        {
-          colorInterpolation = (normalisedRangeEnd - startYCoord) / (normalisedRangeEnd - normalisedRangeStart);
-          normalisedRangeEnd = startYCoord;
-          finish = true;
-        }
-
-        // Under quad
-        coords.add(startXCoord);
-        coords.add(normalisedRangeStart);
-        coords.add(startXCoord);
-        coords.add(normalisedRangeEnd);
-        coords.add(endXCoord);
-        coords.add(normalisedRangeEnd);
-        coords.add(endXCoord);
-        coords.add(normalisedRangeStart);
-
-        indices.add(indexStart);
-        indices.add((short)(indexStart + 1));
-        indices.add((short)(indexStart + 2));
-        indices.add(indexStart);
-        indices.add((short)(indexStart + 2));
-        indices.add((short)(indexStart + 3));
-        indexStart += 4;
-
-        bottomR = Color.red(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
-        bottomG = Color.green(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
-        bottomB = Color.blue(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
-        topR = lerp(Color.red(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE, bottomR, colorInterpolation);
-        topG = lerp(Color.green(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE, bottomG, colorInterpolation);
-        topB = lerp(Color.blue(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE, bottomB, colorInterpolation);
-        colors.add(bottomR);
-        colors.add(bottomG);
-        colors.add(bottomB);
-        colors.add(1.0f);
-        colors.add(topR);
-        colors.add(topG);
-        colors.add(topB);
-        colors.add(1.0f);
-        colors.add(topR);
-        colors.add(topG);
-        colors.add(topB);
-        colors.add(1.0f);
-        colors.add(bottomR);
-        colors.add(bottomG);
-        colors.add(bottomB);
-        colors.add(1.0f);
-      }
     }
 
     createVariableSizedMesh(startingYScale, coords, indices, colors);
