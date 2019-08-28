@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.PointF;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -16,10 +17,13 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.appcompat.content.res.AppCompatResources;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
+import androidx.core.graphics.drawable.DrawableCompat;
 
 import com.voxtric.timegraph.opengl.GraphSurface;
 import com.voxtric.timegraph.opengl.LineRenderable;
@@ -35,18 +39,19 @@ public class TimeGraph extends ConstraintLayout
 {
   private static final boolean DEFAULT_SHOW_VALUE_AXIS = true;
   private static final float DEFAULT_VALUE_AXIS_TEXT_SIZE_SP = 14.0f;
-  private static final int DEFAULT_VALUE_AXIS_TEXT_COLOR = Color.GRAY;
+  private static final @ColorInt int DEFAULT_VALUE_AXIS_TEXT_COLOR = Color.GRAY;
   private static final float DEFAULT_VALUE_AXIS_MIN = 0.0f;
   private static final float DEFAULT_VALUE_AXIS_MAX = 100.0f;
 
   private static final boolean DEFAULT_SHOW_TIME_AXIS = true;
   private static final float DEFAULT_TIME_AXIS_TEXT_SIZE_SP = 14.0f;
-  private static final int DEFAULT_TIME_AXIS_TEXT_COLOR = Color.GRAY;
+  private static final @ColorInt int DEFAULT_TIME_AXIS_TEXT_COLOR = Color.GRAY;
+  private static final @ColorInt int DEFAULT_TIME_AXIS_MARKER_COLOR = Color.BLACK;
 
   private static final boolean DEFAULT_SHOW_NO_DATA_TEXT = true;
   private static final String DEFAULT_NO_DATA_TEXT = "No Data To Display";
   private static final float DEFAULT_NO_DATA_TEXT_SIZE_SP = 18.0f;
-  private static final int DEFAULT_NO_DATA_TEXT_COLOR = Color.BLACK;
+  private static final @ColorInt int DEFAULT_NO_DATA_TEXT_COLOR = Color.BLACK;
 
   private static final boolean DEFAULT_SHOW_REFRESH_PROGRESS = true;
 
@@ -64,9 +69,7 @@ public class TimeGraph extends ConstraintLayout
       DISPLAY_MODE_UNDERLINE,
       DISPLAY_MODE_UNDERLINE_WITH_FADE
   })
-  @interface DisplayMode
-  {
-  }
+  @interface DisplayMode {}
 
   public static final int DISPLAY_MODE_BACKGROUND = 0;
   public static final int DISPLAY_MODE_BACKGROUND_WITH_FADE = 1;
@@ -75,18 +78,19 @@ public class TimeGraph extends ConstraintLayout
 
   private boolean m_showValueAxis = DEFAULT_SHOW_VALUE_AXIS;
   private float m_valueAxisTextSizeSp = DEFAULT_VALUE_AXIS_TEXT_SIZE_SP;
-  private int m_valueAxisTextColor = DEFAULT_VALUE_AXIS_TEXT_COLOR;
+  private @ColorInt int m_valueAxisTextColor = DEFAULT_VALUE_AXIS_TEXT_COLOR;
   private float m_valueAxisMin = DEFAULT_VALUE_AXIS_MIN;
   private float m_valueAxisMax = DEFAULT_VALUE_AXIS_MAX;
 
   private boolean m_showTimeAxis = DEFAULT_SHOW_TIME_AXIS;
   private float m_timeAxisTextSizeSp = DEFAULT_TIME_AXIS_TEXT_SIZE_SP;
-  private int m_timeAxisTextColor = DEFAULT_TIME_AXIS_TEXT_COLOR;
+  private @ColorInt int m_timeAxisTextColor = DEFAULT_TIME_AXIS_TEXT_COLOR;
+  private @ColorInt int m_timeAxisMarkerColor = DEFAULT_TIME_AXIS_MARKER_COLOR;
 
   private boolean m_showNoDataText = DEFAULT_SHOW_NO_DATA_TEXT;
   private CharSequence m_noDataText = DEFAULT_NO_DATA_TEXT;
   private float m_noDataTextSizeSp = DEFAULT_NO_DATA_TEXT_SIZE_SP;
-  private int m_noDataTextColor = DEFAULT_NO_DATA_TEXT_COLOR;
+  private @ColorInt int m_noDataTextColor = DEFAULT_NO_DATA_TEXT_COLOR;
 
   private boolean m_showRefreshProgress = DEFAULT_SHOW_REFRESH_PROGRESS;
 
@@ -117,12 +121,13 @@ public class TimeGraph extends ConstraintLayout
   private GraphData m_firstGraphDataEntry = null;
   private GraphData m_lastGraphDataEntry = null;
 
-  private RelativeLayout m_timeAxisLabelsLayoutView = null;
-  private ArrayList<TextView> m_valueAxisMidViews = new ArrayList<>();
-
   private TextView m_valueAxisMinView = null;
   private TextView m_valueAxisMaxView = null;
+  private ArrayList<TextView> m_valueAxisMidViews = new ArrayList<>();
+
+  private RelativeLayout m_timeAxisLabelsLayoutView = null;
   private ArrayList<TimeAxisLabel> m_timeAxisLabels = new ArrayList<>();
+  private Drawable m_timeAxisLabelsBackground = null;
 
   private float[] m_rangeHighlightingValues = null;
   private int[] m_rangeHighlightingColors = null;
@@ -166,6 +171,7 @@ public class TimeGraph extends ConstraintLayout
     state.putBoolean("m_showTimeAxis", m_showTimeAxis);
     state.putFloat("m_timeAxisTextSizeSp", m_timeAxisTextSizeSp);
     state.putInt("m_timeAxisTextColor", m_timeAxisTextColor);
+    state.putInt("m_timeAxisMarkerColor", m_timeAxisMarkerColor);
 
     state.putBoolean("m_showNoDataText", m_showNoDataText);
     state.putCharSequence("m_noDataText", m_noDataText);
@@ -211,6 +217,7 @@ public class TimeGraph extends ConstraintLayout
       setShowTimeAxis(bundle.getBoolean("m_showTimeAxis"));
       setTimeAxisTextSizeSp(bundle.getFloat("m_timeAxisTextSizeSp"));
       setTimeAxisTextColor(bundle.getInt("m_timeAxisTextColor"));
+      setTimeAxisMarkerColor(bundle.getInt("m_timeAxisMarkerColor"));
 
       setShowNoDataText(bundle.getBoolean("m_showNoDataText"));
       setNoDataText(bundle.getCharSequence("m_noDataText"));
@@ -222,10 +229,15 @@ public class TimeGraph extends ConstraintLayout
       setAllowScroll(bundle.getBoolean("m_allowScroll"));
       setAllowScale(bundle.getBoolean("m_allowScale"));
 
-      setRangeHighlights(bundle.getFloatArray("m_rangeHighlightingValues"),
-                         bundle.getIntArray("m_rangeHighlightingColors"),
-                         bundle.getInt("m_rangeHighlightingDisplayMode"),
-                         false);
+      float[] rangeHighlightingValues = bundle.getFloatArray("m_rangeHighlightingValues");
+      @ColorInt int[] rangeHighlightingColors = bundle.getIntArray("m_rangeHighlightingColors");
+      if (rangeHighlightingValues != null && rangeHighlightingColors != null)
+      {
+        setRangeHighlights(rangeHighlightingValues,
+                           rangeHighlightingColors,
+                           bundle.getInt("m_rangeHighlightingDisplayMode"),
+                           false);
+      }
 
       setValueAxisMidLabels(bundle.getFloatArray("valueAxisMidValues"));
 
@@ -330,7 +342,7 @@ public class TimeGraph extends ConstraintLayout
     return m_valueAxisTextSizeSp;
   }
 
-  public void setValueAxisTextColor(int color)
+  public void setValueAxisTextColor(@ColorInt int color)
   {
     m_valueAxisTextColor = color;
     m_valueAxisMinView.setTextColor(color);
@@ -341,7 +353,7 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  public int getValueAxisTextColor(int color)
+  public @ColorInt int getValueAxisTextColor()
   {
     return m_valueAxisTextColor;
   }
@@ -443,7 +455,7 @@ public class TimeGraph extends ConstraintLayout
     return m_timeAxisTextSizeSp;
   }
 
-  public void setTimeAxisTextColor(int color)
+  public void setTimeAxisTextColor(@ColorInt int color)
   {
     m_timeAxisTextColor = color;
     for (TimeAxisLabel label : m_timeAxisLabels)
@@ -452,9 +464,24 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  public int getTimeAxisTextColor(int color)
+  public @ColorInt int getTimeAxisTextColor()
   {
     return m_timeAxisTextColor;
+  }
+
+  public void setTimeAxisMarkerColor(@ColorInt int color)
+  {
+    m_timeAxisMarkerColor = color;
+    DrawableCompat.setTint(m_timeAxisLabelsBackground, color);
+    for (TimeAxisLabel label : m_timeAxisLabels)
+    {
+      label.view.invalidate();
+    }
+  }
+
+  public @ColorInt int getTimeAxisMarkerColor()
+  {
+    return m_timeAxisMarkerColor;
   }
 
   public void setShowNoDataText(boolean value)
@@ -645,7 +672,7 @@ public class TimeGraph extends ConstraintLayout
             if (index >= m_timeAxisLabels.size())
             {
               timeAxisLabel = new TimeAxisLabel(createTextView(getContext(), m_timeAxisTextSizeSp, m_timeAxisTextColor));
-              timeAxisLabel.view.setBackgroundResource(R.drawable.label_border);
+              timeAxisLabel.view.setBackground(m_timeAxisLabelsBackground);
               timeAxisLabel.view.setPadding(dpToPx(getContext(), 3), 0, 0, 0);
               m_timeAxisLabelsLayoutView.addView(timeAxisLabel.view);
               m_timeAxisLabels.add(timeAxisLabel);
@@ -656,7 +683,7 @@ public class TimeGraph extends ConstraintLayout
               if (timeAxisLabel == null)
               {
                 timeAxisLabel = new TimeAxisLabel(createTextView(getContext(), m_timeAxisTextSizeSp, m_timeAxisTextColor));
-                timeAxisLabel.view.setBackgroundResource(R.drawable.label_border);
+                timeAxisLabel.view.setBackground(m_timeAxisLabelsBackground);
                 timeAxisLabel.view.setPadding(dpToPx(getContext(), 3), 0, 0, 0);
                 m_timeAxisLabelsLayoutView.addView(timeAxisLabel.view);
               }
@@ -1639,6 +1666,7 @@ public class TimeGraph extends ConstraintLayout
       m_showTimeAxis = attributes.getBoolean(R.styleable.TimeGraph_showTimeAxis, DEFAULT_SHOW_TIME_AXIS);
       m_timeAxisTextSizeSp = attributes.getFloat(R.styleable.TimeGraph_timeAxis_textSizeSp, DEFAULT_TIME_AXIS_TEXT_SIZE_SP);
       m_timeAxisTextColor = attributes.getColor(R.styleable.TimeGraph_timeAxis_textColor, DEFAULT_TIME_AXIS_TEXT_COLOR);
+      m_timeAxisMarkerColor = attributes.getColor(R.styleable.TimeGraph_timeAxis_markerColor, DEFAULT_TIME_AXIS_MARKER_COLOR);
 
       m_showNoDataText = attributes.getBoolean(R.styleable.TimeGraph_showNoDataText, DEFAULT_SHOW_NO_DATA_TEXT);
       m_noDataText = attributes.getText(R.styleable.TimeGraph_noData_text);
@@ -1701,6 +1729,13 @@ public class TimeGraph extends ConstraintLayout
     m_noDataView.setTextSize(m_noDataTextSizeSp);
     m_noDataView.setTextColor(m_noDataTextColor);
     addView(m_noDataView);
+
+    Drawable unwrappedTimeAxisLabelBackground = AppCompatResources.getDrawable(getContext(), R.drawable.label_border);
+    if (unwrappedTimeAxisLabelBackground != null)
+    {
+      m_timeAxisLabelsBackground = DrawableCompat.wrap(unwrappedTimeAxisLabelBackground);
+      DrawableCompat.setTint(m_timeAxisLabelsBackground, m_timeAxisMarkerColor);
+    }
 
     ConstraintSet constraintSet = new ConstraintSet();
     constraintSet.clone(context, R.layout.graph_view);

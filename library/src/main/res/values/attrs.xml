@@ -10,6 +10,7 @@
         <attr name="showTimeAxis" format="boolean"/>
         <attr name="timeAxis_textSizeSp" format="float"/>
         <attr name="timeAxis_textColor" format="color"/>
+        <attr name="timeAxis_markerColor" format="color"/>
 
         <attr name="showNoDataText" format="boolean"/>
         <attr name="noData_text" format="string"/>
