@@ -2,9 +2,9 @@ package com.voxtric.timegraph.opengl;
 
 import android.opengl.GLES20;
 
-public class Line extends TransformableRenderable
+public class LineRenderable extends TransformableRenderable
 {
-  Line(int drawOrder, float[] coords)
+  LineRenderable(int drawOrder, float[] coords)
   {
     super(drawOrder, coords);
   }

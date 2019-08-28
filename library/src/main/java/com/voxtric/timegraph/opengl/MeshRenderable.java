@@ -7,7 +7,7 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 
-public class Mesh extends TransformableRenderable
+public class MeshRenderable extends TransformableRenderable
 {
   private static final String VERTEX_SHADER_CODE =
       "uniform float xOffset;" +
@@ -39,7 +39,7 @@ public class Mesh extends TransformableRenderable
   private int m_indexCount;
   private FloatBuffer m_colorBuffer;
 
-  Mesh(int drawOrder, float[] coords, short[] indices, float[] colors)
+  MeshRenderable(int drawOrder, float[] coords, short[] indices, float[] colors)
   {
     super(drawOrder, coords);
 
@@ -60,7 +60,7 @@ public class Mesh extends TransformableRenderable
   @Override
   void draw()
   {
-    int shaderHandle = Mesh.getShaderHandle();
+    int shaderHandle = MeshRenderable.getShaderHandle();
 
     int vertexPositionHandle = GLES20.glGetAttribLocation(shaderHandle, "vertexPosition");
     GLES20.glEnableVertexAttribArray(vertexPositionHandle);

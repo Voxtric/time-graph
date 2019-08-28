@@ -44,7 +44,7 @@ public class GraphSurface extends GLSurfaceView
     super.onDetachedFromWindow();
     Renderable.releaseShader();
     TransformableRenderable.releaseShader();
-    Mesh.releaseShader();
+    MeshRenderable.releaseShader();
   }
 
   @Override
@@ -117,9 +117,9 @@ public class GraphSurface extends GLSurfaceView
     return handled;
   }
 
-  public LineStrip addLineStrip(int drawOrder, float[] coords)
+  public LineStripRenderable addLineStrip(int drawOrder, float[] coords)
   {
-    final LineStrip lineStrip = new LineStrip(drawOrder, coords);
+    final LineStripRenderable lineStrip = new LineStripRenderable(drawOrder, coords);
     queueEvent(new Runnable()
     {
       @Override
@@ -132,9 +132,9 @@ public class GraphSurface extends GLSurfaceView
     return lineStrip;
   }
 
-  public Line addLine(int drawOrder, float[] coords)
+  public LineRenderable addLine(int drawOrder, float[] coords)
   {
-    final Line line = new Line(drawOrder, coords);
+    final LineRenderable line = new LineRenderable(drawOrder, coords);
     queueEvent(new Runnable()
     {
       @Override
@@ -147,9 +147,9 @@ public class GraphSurface extends GLSurfaceView
     return line;
   }
 
-  public Mesh addMesh(int drawOrder, float[] coords, short[] indices, float[] colors)
+  public MeshRenderable addMesh(int drawOrder, float[] coords, short[] indices, float[] colors)
   {
-    final Mesh mesh = new Mesh(drawOrder, coords, indices, colors);
+    final MeshRenderable mesh = new MeshRenderable(drawOrder, coords, indices, colors);
     queueEvent(new Runnable()
     {
       @Override

@@ -22,17 +22,14 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 
 import com.voxtric.timegraph.opengl.GraphSurface;
-import com.voxtric.timegraph.opengl.Line;
-import com.voxtric.timegraph.opengl.LineStrip;
-import com.voxtric.timegraph.opengl.Mesh;
+import com.voxtric.timegraph.opengl.LineRenderable;
+import com.voxtric.timegraph.opengl.LineStripRenderable;
+import com.voxtric.timegraph.opengl.MeshRenderable;
 import com.voxtric.timegraph.opengl.Renderable;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.text.DateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
 
 public class TimeGraph extends ConstraintLayout
 {
@@ -47,7 +44,7 @@ public class TimeGraph extends ConstraintLayout
   private static final int DEFAULT_TIME_AXIS_TEXT_COLOR = Color.GRAY;
 
   private static final boolean DEFAULT_SHOW_NO_DATA_TEXT = true;
-  private static final String DEFAULT_NO_DATA_TEXT = "No Data To Display";
+  private static final String DEFAULT_NO_DATA_TEXT = "No GraphData To Display";
   private static final float DEFAULT_NO_DATA_TEXT_SIZE_SP = 18.0f;
   private static final int DEFAULT_NO_DATA_TEXT_COLOR = Color.BLACK;
 
@@ -61,7 +58,7 @@ public class TimeGraph extends ConstraintLayout
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({DISPLAY_MODE_BASIC, DISPLAY_MODE_UNDERLINE, DISPLAY_MODE_UNDERLINE_WITH_FADE})
-  public @interface DisplayMode {}
+  @interface DisplayMode {}
   public static final int DISPLAY_MODE_BASIC = 0;
   public static final int DISPLAY_MODE_UNDERLINE = 1;
   public static final int DISPLAY_MODE_UNDERLINE_WITH_FADE = 2;
@@ -90,7 +87,7 @@ public class TimeGraph extends ConstraintLayout
   private long m_endTimestamp = 0L;
   private long m_beforeScalingStartTimestamp = Long.MIN_VALUE;
   private long m_beforeScalingEndTimestamp = Long.MAX_VALUE;
-  private DataAccessor m_dataAccessor = null;
+  private GraphDataProvider m_dataProvider = null;
 
   private boolean m_refreshing = false;
   private boolean m_newRefreshRequested = false;
@@ -102,13 +99,13 @@ public class TimeGraph extends ConstraintLayout
   private float m_xScale = 1.0f;
   private float m_normalisedForcedXCentre = -1.0f;
 
-  private LineStrip m_dataLineStrip = null;
-  private Mesh m_rangeHighlightMesh = null;
-  private Line m_labelMarkersLine = null;
+  private LineStripRenderable m_dataLineStrip = null;
+  private MeshRenderable m_rangeHighlightMesh = null;
+  private LineRenderable m_labelMarkersLine = null;
   private ValueAnimator m_newDataAnimator = null;
 
-  private Data m_firstDataEntry = null;
-  private Data m_lastDataEntry = null;
+  private GraphData m_firstGraphDataEntry = null;
+  private GraphData m_lastGraphDataEntry = null;
 
   private RelativeLayout m_timeAxisLabelsLayoutView = null;
   private ArrayList<TextView> m_valueAxisMidViews = new ArrayList<>();
@@ -662,7 +659,7 @@ public class TimeGraph extends ConstraintLayout
             labelMarkerCoords[coordsIndex + 2] = markerX;
             labelMarkerCoords[coordsIndex + 3] = -0.9f;
           }
-          Line oldLabelMarkersLine = m_labelMarkersLine;
+          LineRenderable oldLabelMarkersLine = m_labelMarkersLine;
           m_labelMarkersLine = m_graphSurfaceView.addLine(1, labelMarkerCoords);
           if (oldLabelMarkersLine != null)
           {
@@ -716,11 +713,11 @@ public class TimeGraph extends ConstraintLayout
     refresh(animate);
   }
 
-  public void setVisibleDataPeriod(long startTimestamp, long endTimestamp, @NonNull final DataAccessor dataAccessor, boolean animate)
+  public void setVisibleDataPeriod(long startTimestamp, long endTimestamp, @NonNull final GraphDataProvider dataProvider, boolean animate)
   {
     m_startTimestamp = startTimestamp;
     m_endTimestamp = endTimestamp;
-    m_dataAccessor = dataAccessor;
+    m_dataProvider = dataProvider;
 
     refresh(animate);
   }
@@ -739,14 +736,14 @@ public class TimeGraph extends ConstraintLayout
   {
     m_startTimestamp = 0L;
     m_endTimestamp = 0L;
-    m_dataAccessor = null;
+    m_dataProvider = null;
 
     refresh(false);
   }
 
-  public void refresh(DataAccessor dataAccessor, boolean animateNew)
+  public void refresh(GraphDataProvider dataProvider, boolean animateNew)
   {
-    m_dataAccessor = dataAccessor;
+    m_dataProvider = dataProvider;
     refresh(animateNew);
   }
 
@@ -794,13 +791,13 @@ public class TimeGraph extends ConstraintLayout
         {
           float valueDifference = m_valueAxisMax - m_valueAxisMin;
 
-          Data[] data = null;
-          if (m_dataAccessor != null)
+          GraphData[] data = null;
+          if (m_dataProvider != null)
           {
             while (m_newRefreshRequested)
             {
               m_newRefreshRequested = false;
-              data = m_dataAccessor.getData(m_startTimestamp - timeDifference,
+              data = m_dataProvider.getData(m_startTimestamp - timeDifference,
                                             m_endTimestamp + timeDifference,
                                             m_startTimestamp,
                                             m_endTimestamp);
@@ -808,18 +805,18 @@ public class TimeGraph extends ConstraintLayout
 
             if (data != null && data.length > 0)
             {
-              m_firstDataEntry = data[0];
-              m_lastDataEntry = data[data.length - 1];
-              setTimeAxisLabels(m_dataAccessor.getLabelsForData(data));
+              m_firstGraphDataEntry = data[0];
+              m_lastGraphDataEntry = data[data.length - 1];
+              setTimeAxisLabels(m_dataProvider.getLabelsForData(data));
               float floatTimeDifference = (float)timeDifference;
-              if (m_firstDataEntry.timestamp > m_startTimestamp)
+              if (m_firstGraphDataEntry.timestamp > m_startTimestamp)
               {
-                m_startTimestamp = m_firstDataEntry.timestamp;
+                m_startTimestamp = m_firstGraphDataEntry.timestamp;
                 floatTimeDifference = (float)(m_endTimestamp - m_startTimestamp);
               }
-              if (m_lastDataEntry.timestamp < m_endTimestamp)
+              if (m_lastGraphDataEntry.timestamp < m_endTimestamp)
               {
-                m_endTimestamp = m_lastDataEntry.timestamp;
+                m_endTimestamp = m_lastGraphDataEntry.timestamp;
                 floatTimeDifference = (float)(m_endTimestamp - m_startTimestamp);
               }
 
@@ -915,11 +912,11 @@ public class TimeGraph extends ConstraintLayout
     });
   }
 
-  private void createDataLineStrip(Data[] data, float timeDifference, float valueDifference, float startingYScale)
+  private void createDataLineStrip(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
   {
     float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
     int coordsIndex = 0;
-    for (Data datum : data)
+    for (GraphData datum : data)
     {
       float xCoord = (datum.timestamp - m_startTimestamp) / timeDifference;
       float yCoord = (datum.value - m_valueAxisMin) / valueDifference;
@@ -927,7 +924,7 @@ public class TimeGraph extends ConstraintLayout
       coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
       coordsIndex += 2;
     }
-    LineStrip oldDataLine = m_dataLineStrip;
+    LineStripRenderable oldDataLine = m_dataLineStrip;
     m_dataLineStrip = m_graphSurfaceView.addLineStrip(1, coords);
     m_dataLineStrip.setYScale(startingYScale);
     if (oldDataLine != null)
@@ -936,7 +933,7 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  private void createHighlightMesh(Data[] data, float timeDifference, float valueDifference, float startingYScale)
+  private void createHighlightMesh(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
   {
     switch (m_rangeHighlightingDisplayMode)
     {
@@ -954,12 +951,12 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  private void createHighlightMeshBasic(Data[] data, float timeDifference, float valueDifference, float startingYScale)
+  private void createHighlightMeshBasic(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
   {
 
   }
 
-  private void createHighlightMeshUnderline(Data[] data, float timeDifference, float valueDifference, float startingYScale)
+  private void createHighlightMeshUnderline(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
   {
     ArrayList<Float> coords = new ArrayList<>();
     ArrayList<Short> indices = new ArrayList<>();
@@ -967,10 +964,10 @@ public class TimeGraph extends ConstraintLayout
     short indexStart = 0;
     for (int i = 0; i < data.length - 1; i++)
     {
-      Data start = data[i];
+      GraphData start = data[i];
       float startXCoord = (start.timestamp - m_startTimestamp) / timeDifference;
       float startYCoord = (start.value - m_valueAxisMin) / valueDifference;
-      Data end = data[i + 1];
+      GraphData end = data[i + 1];
       float endXCoord = (end.timestamp - m_startTimestamp) / timeDifference;
       float endYCoord = (end.value - m_valueAxisMin) / valueDifference;
       if (endYCoord < startYCoord)
@@ -1144,7 +1141,7 @@ public class TimeGraph extends ConstraintLayout
     {
       colorArray[i] = colors.get(i);
     }
-    Mesh oldDataMesh = m_rangeHighlightMesh;
+    MeshRenderable oldDataMesh = m_rangeHighlightMesh;
     m_rangeHighlightMesh = m_graphSurfaceView.addMesh(0, coordArray, indexArray, colorArray);
     m_rangeHighlightMesh.setYScale(startingYScale);
     if (oldDataMesh != null)
@@ -1153,7 +1150,7 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  private void createHighlightMeshUnderlineWithFade(Data[] data, float timeDifference, float valueDifference, float startingYScale)
+  private void createHighlightMeshUnderlineWithFade(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
   {
     float[] rangeHighlightingValues = new float[m_rangeHighlightingColors.length * 2];
     rangeHighlightingValues[0] = m_rangeHighlightingValues[0];
@@ -1179,10 +1176,10 @@ public class TimeGraph extends ConstraintLayout
     short indexStart = 0;
     for (int i = 0; i < data.length - 1; i++)
     {
-      Data start = data[i];
+      GraphData start = data[i];
       float startXCoord = (start.timestamp - m_startTimestamp) / timeDifference;
       float startYCoord = (start.value - m_valueAxisMin) / valueDifference;
-      Data end = data[i + 1];
+      GraphData end = data[i + 1];
       float endXCoord = (end.timestamp - m_startTimestamp) / timeDifference;
       float endYCoord = (end.value - m_valueAxisMin) / valueDifference;
       if (endYCoord < startYCoord)
@@ -1405,7 +1402,7 @@ public class TimeGraph extends ConstraintLayout
     {
       colorArray[i] = colors.get(i);
     }
-    Mesh oldDataMesh = m_rangeHighlightMesh;
+    MeshRenderable oldDataMesh = m_rangeHighlightMesh;
     m_rangeHighlightMesh = m_graphSurfaceView.addMesh(0, coordArray, indexArray, colorArray);
     m_rangeHighlightMesh.setYScale(startingYScale);
     if (oldDataMesh != null)
@@ -1425,9 +1422,9 @@ public class TimeGraph extends ConstraintLayout
     {
       long timeDifference = m_endTimestamp - m_startTimestamp;
 
-      long startToFirstDifference = m_startTimestamp - m_firstDataEntry.timestamp;
+      long startToFirstDifference = m_startTimestamp - m_firstGraphDataEntry.timestamp;
       float normalisedStartToFirstDifference = startToFirstDifference / (float)timeDifference;
-      long endToLastDifference = m_endTimestamp - m_lastDataEntry.timestamp;
+      long endToLastDifference = m_endTimestamp - m_lastGraphDataEntry.timestamp;
       float normalisedEndToLastDifference = endToLastDifference / (float)timeDifference;
 
       if (dataFits())
@@ -1516,8 +1513,8 @@ public class TimeGraph extends ConstraintLayout
           timingScale,
           normalisedXCentre);
 
-      long startToFirstDifference = m_firstDataEntry.timestamp - m_startTimestamp;
-      long endToLastDifference = m_endTimestamp - m_lastDataEntry.timestamp;
+      long startToFirstDifference = m_firstGraphDataEntry.timestamp - m_startTimestamp;
+      long endToLastDifference = m_endTimestamp - m_lastGraphDataEntry.timestamp;
       if (startToFirstDifference > 0 && endToLastDifference <= 0)
       {
         m_startTimestamp += startToFirstDifference;
@@ -1565,7 +1562,7 @@ public class TimeGraph extends ConstraintLayout
   private boolean dataFits()
   {
     long timeDifference = m_endTimestamp - m_startTimestamp;
-    long firstToLastDifference = m_lastDataEntry.timestamp - m_firstDataEntry.timestamp;
+    long firstToLastDifference = m_lastGraphDataEntry.timestamp - m_firstGraphDataEntry.timestamp;
     return firstToLastDifference > timeDifference;
   }
 
@@ -1742,82 +1739,5 @@ public class TimeGraph extends ConstraintLayout
       }
     }
     return intersected;
-  }
-
-  public static class TimeAxisLabelData
-  {
-    long timestamp;
-    String label;
-
-    public TimeAxisLabelData(long timestamp, String label)
-    {
-      this.timestamp = timestamp;
-      this.label = label;
-    }
-
-    public static TimeAxisLabelData[] labelDays(Data[] data)
-    {
-      ArrayList<TimeAxisLabelData> timeAxisLabelData = new ArrayList<>();
-      long lastDay = Long.MIN_VALUE;
-      Calendar calendar = Calendar.getInstance();
-
-      for (Data datum : data)
-      {
-        calendar.setTimeInMillis(datum.timestamp);
-        calendar.set(Calendar.HOUR_OF_DAY, calendar.getMinimum(Calendar.HOUR_OF_DAY));
-        calendar.set(Calendar.MINUTE, calendar.getMinimum(Calendar.MINUTE));
-        calendar.set(Calendar.SECOND, calendar.getMinimum(Calendar.SECOND));
-        calendar.set(Calendar.MILLISECOND, calendar.getMinimum(Calendar.MILLISECOND));
-
-        if (calendar.getTimeInMillis() > lastDay)
-        {
-          lastDay = calendar.getTimeInMillis();
-          Date date = calendar.getTime();
-          DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.SHORT);
-          timeAxisLabelData.add(new TimeAxisLabelData(lastDay, dateFormat.format(date)));
-        }
-      }
-
-      return timeAxisLabelData.toArray(new TimeAxisLabelData[0]);
-    }
-  }
-
-  private static class TimeAxisLabel
-  {
-    long timestamp;
-    float offset;
-    TextView view;
-
-    TimeAxisLabel(TextView view)
-    {
-      this.timestamp = 0L;
-      this.offset = 0.0f;
-      this.view = view;
-    }
-
-    TimeAxisLabel(long timestamp, float offset, TextView view)
-    {
-      this.timestamp = timestamp;
-      this.offset = offset;
-      this.view = view;
-    }
-  }
-
-  public static class Data
-  {
-    public long timestamp;
-    public float value;
-
-    public Data(long timestamp, float value)
-    {
-      this.timestamp = timestamp;
-      this.value = value;
-    }
-  }
-
-  public interface DataAccessor
-  {
-    Data[] getData(long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp);
-    TimeAxisLabelData[] getLabelsForData(Data[] data);
   }
 }
