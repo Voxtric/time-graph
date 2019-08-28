@@ -947,6 +947,7 @@ public class TimeGraph extends ConstraintLayout
       createHighlightMeshUnderline(data, timeDifference, valueDifference, startingYScale);
       break;
     case DISPLAY_MODE_UNDERLINE_WITH_FADE:
+      createHighlightMeshUnderlineWithFade(data, timeDifference, valueDifference, startingYScale);
       break;
     default:
       throw new IllegalStateException("Unknown range highlighting display mode value.");
@@ -1150,6 +1151,272 @@ public class TimeGraph extends ConstraintLayout
     {
       m_graphSurfaceView.removeRenderable(oldDataMesh);
     }
+  }
+
+  private void createHighlightMeshUnderlineWithFade(Data[] data, float timeDifference, float valueDifference, float startingYScale)
+  {
+    float[] rangeHighlightingValues = new float[m_rangeHighlightingColors.length * 2];
+    rangeHighlightingValues[0] = m_rangeHighlightingValues[0];
+    rangeHighlightingValues[rangeHighlightingValues.length - 1] = m_rangeHighlightingValues[m_rangeHighlightingValues.length - 1];
+    int rangeHighlightValuesIndex = 1;
+    float modifier = valueDifference * 0.05f;
+    for (int i = 1; i < m_rangeHighlightingValues.length - 1; i++)
+    {
+      rangeHighlightingValues[rangeHighlightValuesIndex] = m_rangeHighlightingValues[i] - modifier;
+      rangeHighlightingValues[rangeHighlightValuesIndex + 1] = m_rangeHighlightingValues[i] + modifier;
+      rangeHighlightValuesIndex += 2;
+    }
+
+    int[] rangeHighlightingColors = new int[rangeHighlightingValues.length];
+    for (int i = 0; i < rangeHighlightingValues.length; i++)
+    {
+      rangeHighlightingColors[i] = m_rangeHighlightingColors[i / 2];
+    }
+
+    ArrayList<Float> coords = new ArrayList<>();
+    ArrayList<Short> indices = new ArrayList<>();
+    ArrayList<Float> colors = new ArrayList<>();
+    short indexStart = 0;
+    for (int i = 0; i < data.length - 1; i++)
+    {
+      Data start = data[i];
+      float startXCoord = (start.timestamp - m_startTimestamp) / timeDifference;
+      float startYCoord = (start.value - m_valueAxisMin) / valueDifference;
+      Data end = data[i + 1];
+      float endXCoord = (end.timestamp - m_startTimestamp) / timeDifference;
+      float endYCoord = (end.value - m_valueAxisMin) / valueDifference;
+      if (endYCoord < startYCoord)
+      {
+        float tempXCoord = startXCoord;
+        float tempYCoord = startYCoord;
+        startXCoord = endXCoord;
+        startYCoord = endYCoord;
+        endXCoord = tempXCoord;
+        endYCoord = tempYCoord;
+      }
+
+      float lastX = startXCoord;
+      float lastY = startYCoord;
+      int lastIndex = -1;
+      for (int j = 0; j < rangeHighlightingValues.length - 1 && lastIndex == -1; j++)
+      {
+        float normalisedRangeEnd = (rangeHighlightingValues[j + 1] - m_valueAxisMin) / valueDifference;
+        if (normalisedRangeEnd > startYCoord)
+        {
+          lastIndex = j;
+        }
+      }
+
+      for (int j = 1; j < rangeHighlightingValues.length; j++)
+      {
+        float normalisedRangeStart = (rangeHighlightingValues[j - 1] - m_valueAxisMin) / valueDifference;
+        float normalisedRangeEnd = (rangeHighlightingValues[j] - m_valueAxisMin) / valueDifference;
+        PointF intersection = new PointF();
+        if (getRangeIntersection(startXCoord, startYCoord, endXCoord, endYCoord, normalisedRangeEnd, intersection))
+        {
+
+          // Intersect quad
+          coords.add(lastX);
+          coords.add(lastY);
+          coords.add(intersection.x);
+          coords.add(intersection.y);
+          coords.add(endXCoord);
+          coords.add(intersection.y);
+          coords.add(endXCoord);
+          coords.add(lastY);
+
+          indices.add(indexStart);
+          indices.add((short)(indexStart + 1));
+          indices.add((short)(indexStart + 2));
+          indices.add(indexStart);
+          indices.add((short)(indexStart + 2));
+          indices.add((short)(indexStart + 3));
+          indexStart += 4;
+
+          float bottomR = Color.red(rangeHighlightingColors[lastIndex]) / (float)Byte.MAX_VALUE;
+          float bottomG = Color.green(rangeHighlightingColors[lastIndex]) / (float)Byte.MAX_VALUE;
+          float bottomB = Color.blue(rangeHighlightingColors[lastIndex]) / (float)Byte.MAX_VALUE;
+          float topR = Color.red(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
+          float topG = Color.green(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
+          float topB = Color.blue(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
+
+          if (normalisedRangeEnd > endYCoord)
+          {
+            float colorInterpolation = (normalisedRangeEnd - endYCoord) / (normalisedRangeEnd - normalisedRangeStart);
+            topR = lerp(topR, bottomR, colorInterpolation);
+            topG = lerp(topG, bottomG, colorInterpolation);
+            topB = lerp(topB, bottomB, colorInterpolation);
+          }
+
+          if (normalisedRangeStart < startYCoord)
+          {
+            float colorInterpolation = (startYCoord - normalisedRangeStart) / (normalisedRangeEnd - normalisedRangeStart);
+            bottomR = lerp(bottomR, topR, colorInterpolation);
+            bottomG = lerp(bottomG, topG, colorInterpolation);
+            bottomB = lerp(bottomB, topB, colorInterpolation);
+          }
+
+          colors.add(bottomR);
+          colors.add(bottomG);
+          colors.add(bottomB);
+          colors.add(1.0f);
+          colors.add(topR);
+          colors.add(topG);
+          colors.add(topB);
+          colors.add(1.0f);
+          colors.add(topR);
+          colors.add(topG);
+          colors.add(topB);
+          colors.add(1.0f);
+          colors.add(bottomR);
+          colors.add(bottomG);
+          colors.add(bottomB);
+          colors.add(1.0f);
+
+          lastX = intersection.x;
+          lastY = intersection.y;
+          lastIndex = j;
+        }
+      }
+
+      float normalisedRangeStart = (rangeHighlightingValues[lastIndex] - m_valueAxisMin) / valueDifference;
+      float normalisedRangeEnd = (rangeHighlightingValues[lastIndex + 1] - m_valueAxisMin) / valueDifference;
+
+      // Peak
+      coords.add(lastX);
+      coords.add(lastY);
+      coords.add(endXCoord);
+      coords.add(endYCoord);
+      coords.add(endXCoord);
+      coords.add(lastY);
+
+      indices.add(indexStart);
+      indices.add((short)(indexStart + 1));
+      indices.add((short)(indexStart + 2));
+      indexStart += 3;
+
+      float bottomR = Color.red(rangeHighlightingColors[lastIndex]) / (float)Byte.MAX_VALUE;
+      float bottomG = Color.green(rangeHighlightingColors[lastIndex]) / (float)Byte.MAX_VALUE;
+      float bottomB = Color.blue(rangeHighlightingColors[lastIndex]) / (float)Byte.MAX_VALUE;
+      float topR = Color.red(rangeHighlightingColors[lastIndex + 1]) / (float)Byte.MAX_VALUE;
+      float topG = Color.green(rangeHighlightingColors[lastIndex + 1]) / (float)Byte.MAX_VALUE;
+      float topB = Color.blue(rangeHighlightingColors[lastIndex + 1]) / (float)Byte.MAX_VALUE;
+
+      if (normalisedRangeEnd > endYCoord)
+      {
+        float colorInterpolation = (normalisedRangeEnd - endYCoord) / (normalisedRangeEnd - normalisedRangeStart);
+        topR = lerp(topR, bottomR, colorInterpolation);
+        topG = lerp(topG, bottomG, colorInterpolation);
+        topB = lerp(topB, bottomB, colorInterpolation);
+      }
+
+      if (normalisedRangeStart < startYCoord)
+      {
+        float colorInterpolation = (startYCoord - normalisedRangeStart) / (normalisedRangeEnd - normalisedRangeStart);
+        bottomR = lerp(bottomR, topR, colorInterpolation);
+        bottomG = lerp(bottomG, topG, colorInterpolation);
+        bottomB = lerp(bottomB, topB, colorInterpolation);
+      }
+
+      colors.add(bottomR);
+      colors.add(bottomG);
+      colors.add(bottomB);
+      colors.add(1.0f);
+      colors.add(topR);
+      colors.add(topG);
+      colors.add(topB);
+      colors.add(1.0f);
+      colors.add(bottomR);
+      colors.add(bottomG);
+      colors.add(bottomB);
+      colors.add(1.0f);
+
+      boolean finish = false;
+      for (int j = 0; j < rangeHighlightingValues.length - 1 && !finish; j++)
+      {
+        float colorInterpolation = 0.0f;
+        normalisedRangeStart = (rangeHighlightingValues[j] - m_valueAxisMin) / valueDifference;
+        normalisedRangeEnd = (rangeHighlightingValues[j + 1] - m_valueAxisMin) / valueDifference;
+        if (normalisedRangeEnd > startYCoord)
+        {
+          colorInterpolation = (normalisedRangeEnd - startYCoord) / (normalisedRangeEnd - normalisedRangeStart);
+          normalisedRangeEnd = startYCoord;
+          finish = true;
+        }
+
+        // Under quad
+        coords.add(startXCoord);
+        coords.add(normalisedRangeStart);
+        coords.add(startXCoord);
+        coords.add(normalisedRangeEnd);
+        coords.add(endXCoord);
+        coords.add(normalisedRangeEnd);
+        coords.add(endXCoord);
+        coords.add(normalisedRangeStart);
+
+        indices.add(indexStart);
+        indices.add((short)(indexStart + 1));
+        indices.add((short)(indexStart + 2));
+        indices.add(indexStart);
+        indices.add((short)(indexStart + 2));
+        indices.add((short)(indexStart + 3));
+        indexStart += 4;
+
+        bottomR = Color.red(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
+        bottomG = Color.green(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
+        bottomB = Color.blue(rangeHighlightingColors[j]) / (float)Byte.MAX_VALUE;
+        /*topR = Color.red(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE;
+        topG = Color.green(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE;
+        topB = Color.blue(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE;*/
+        topR = lerp(Color.red(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE, bottomR, colorInterpolation);
+        topG = lerp(Color.green(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE, bottomG, colorInterpolation);
+        topB = lerp(Color.blue(rangeHighlightingColors[j + 1]) / (float)Byte.MAX_VALUE, bottomB, colorInterpolation);
+        colors.add(bottomR);
+        colors.add(bottomG);
+        colors.add(bottomB);
+        colors.add(1.0f);
+        colors.add(topR);
+        colors.add(topG);
+        colors.add(topB);
+        colors.add(1.0f);
+        colors.add(topR);
+        colors.add(topG);
+        colors.add(topB);
+        colors.add(1.0f);
+        colors.add(bottomR);
+        colors.add(bottomG);
+        colors.add(bottomB);
+        colors.add(1.0f);
+      }
+    }
+
+    float[] coordArray = new float[coords.size()];
+    for (int i = 0; i < coordArray.length; i++)
+    {
+      coordArray[i] = (coords.get(i) * 2.0f) - 1.0f;
+    }
+    short[] indexArray = new short[indices.size()];
+    for (int i = 0; i < indexArray.length; i++)
+    {
+      indexArray[i] = indices.get(i);
+    }
+    float[] colorArray = new float[colors.size()];
+    for (int i = 0; i < colorArray.length; i++)
+    {
+      colorArray[i] = colors.get(i);
+    }
+    Mesh oldDataMesh = m_rangeHighlightMesh;
+    m_rangeHighlightMesh = m_graphSurfaceView.addMesh(0, coordArray, indexArray, colorArray);
+    m_rangeHighlightMesh.setYScale(startingYScale);
+    if (oldDataMesh != null)
+    {
+      m_graphSurfaceView.removeRenderable(oldDataMesh);
+    }
+  }
+
+  float lerp(float a, float b, float f)
+  {
+    return a + f * (b - a);
   }
 
   public void scrollData(float normalisedScrollDelta)
