@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
     Random random = new Random(2);
     for (int i = 0; i < m_testData.length; i++)
     {
-      m_testData[i] = new GraphData((i * 86400000L)/* + (Math.abs(random.nextLong()) % 86000000L)*/, random.nextFloat() * 16.0f);
+      m_testData[i] = new GraphData((i * 86400000L) + (Math.abs(random.nextLong()) % 86000000L), random.nextFloat() * 16.0f);
     }
 
 
@@ -79,6 +79,6 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
   @Override
   public TimeAxisLabelData[] getLabelsForData(GraphData[] data)
   {
-    return TimeAxisLabelData.labelDays(data);
+    return TimeAxisLabelData.autoLabel(data);
   }
 }
