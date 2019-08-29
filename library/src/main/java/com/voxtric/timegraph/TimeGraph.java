@@ -63,6 +63,7 @@ public class TimeGraph extends ConstraintLayout
   private static final float VALUE_AXIS_MARGIN_DP = 4.0f;
   private static final long NEW_DATA_ANIMATION_DURATION = 600L;
   private static final float HALF_FADE_MULTIPLIER = 0.04f;
+  private static final float TIME_AXIS_LABEL_WIDTH_MODIFIER = 1.2f;
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
@@ -706,6 +707,7 @@ public class TimeGraph extends ConstraintLayout
           final int initialTimeAxisHeight = m_timeAxisLabelsLayoutView.getHeight();
 
           double difference = (double)(m_endTimestamp - m_startTimestamp);
+          float lastPosition = Float.MIN_VALUE;
           int index = 0;
           for (; index < timeAxisLabelData.length; index++)
           {
@@ -762,6 +764,24 @@ public class TimeGraph extends ConstraintLayout
               {
                 resizeViewForValueAxisLabels();
 
+                if (!m_timeAxisLabels.isEmpty())
+                {
+                  float lastPosition = -Float.MAX_VALUE;
+                  float width = m_timeAxisLabels.get(0).view.getWidth() * TIME_AXIS_LABEL_WIDTH_MODIFIER;
+                  for (TimeAxisLabel label : m_timeAxisLabels)
+                  {
+                    if (label.offset - width < lastPosition)
+                    {
+                      label.view.setVisibility(View.GONE);
+                    }
+                    else
+                    {
+                      label.view.setVisibility(View.VISIBLE);
+                      lastPosition = label.offset;
+                    }
+                  }
+                }
+
                 post(new Runnable()
                 {
                   @Override
@@ -786,8 +806,7 @@ public class TimeGraph extends ConstraintLayout
     double difference = (double)(m_endTimestamp - m_startTimestamp);
     float widthMultiplier = 1.0f - (float)((double)(m_endTimestamp - label.timestamp) / difference);
     float offset = widthMultiplier * m_graphSurfaceView.getWidth();
-    label.view.animate().translationX(0.0f).setDuration(0).start();
-    label.view.animate().translationXBy(offset).setDuration(0).start();
+    label.view.animate().translationX(offset).setDuration(0).start();
     label.offset = offset;
   }
 
@@ -1659,14 +1678,28 @@ public class TimeGraph extends ConstraintLayout
       }
       else
       {
-        for (TimeAxisLabel label : m_timeAxisLabels)
+        if (!m_timeAxisLabels.isEmpty())
         {
-          float labelPosition = (float)scaleValue(0.0,
-                                                  m_graphSurfaceView.getWidth(),
-                                                  label.offset,
-                                                  m_xScale,
-                                                  normalisedXCentre);
-          label.view.animate().translationX(labelPosition).setDuration(0).start();
+          float lastPosition = -Float.MAX_VALUE;
+          float width = m_timeAxisLabels.get(0).view.getWidth() * TIME_AXIS_LABEL_WIDTH_MODIFIER;
+          for (TimeAxisLabel label : m_timeAxisLabels)
+          {
+            float labelPosition = (float)scaleValue(0.0,
+                                                    m_graphSurfaceView.getWidth(),
+                                                    label.offset,
+                                                    m_xScale,
+                                                    normalisedXCentre);
+            label.view.animate().translationX(labelPosition).setDuration(0).start();
+            if (labelPosition - width < lastPosition)
+            {
+              label.view.setVisibility(View.GONE);
+            }
+            else
+            {
+              label.view.setVisibility(View.VISIBLE);
+              lastPosition = labelPosition;
+            }
+          }
         }
 
         float openGlXScalePosition = (normalisedXCentre * 2.0f) - 1.0f;
