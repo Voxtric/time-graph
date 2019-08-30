@@ -6,13 +6,13 @@ ext {
     bintrayRepo = "TimeGraph"
     bintrayName = "com.voxtric.timegraph"
 
-    libraryName = 'library'
+    libraryName = 'timegraph'
 
     publishedGroupId = 'com.voxtric.timegraph'
     artifact = 'timegraph'
     libraryVersion = '0.2.0'
 
-    libraryDescription = ''
+    libraryDescription = 'A library for displaying a transformable line graph where the x axis is displayed in terms of points in time.'
     siteUrl = 'https://github.com/Voxtric/time-graph'
     gitUrl = 'https://github.com/Voxtric/time-graph.git'
     developerId = 'voxtric'
