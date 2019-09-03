@@ -149,7 +149,7 @@ public class TimeAxisLabelData
         Date date = calendar.getTime();
         DateFormat dateFormat = DateFormat.getTimeInstance(DateFormat.SHORT);
         timeAxisLabelData.add(new TimeAxisLabelData(calendar.getTimeInMillis(), dateFormat.format(date)));
-        calendar.add(Calendar.HOUR, 1);
+        calendar.add(Calendar.HOUR_OF_DAY, 1);
       }
     }
 

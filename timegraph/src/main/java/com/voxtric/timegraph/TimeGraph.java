@@ -745,7 +745,7 @@ public class TimeGraph extends ConstraintLayout
 
             timeAxisLabel.timestamp = timeAxisLabelData[index].timestamp;
             timeAxisLabel.view.setText(timeAxisLabelData[index].label);
-            //repositionTimeAxisLabel(timeAxisLabel);
+            repositionTimeAxisLabel(timeAxisLabel);
           }
 
           for (int i = m_timeAxisLabels.size() - 1; i >= index; i--)
@@ -816,7 +816,25 @@ public class TimeGraph extends ConstraintLayout
 
   private void setTimeAxisLabelsVisibility()
   {
-    boolean newAnchorRequired = true;
+    float width = m_timeAxisLabels.get(0).view.getWidth() * TIME_AXIS_LABEL_WIDTH_MODIFIER;
+    float lastOffset = -Float.MAX_VALUE;
+    for (int i = 0; i < m_timeAxisLabels.size(); i++)
+    {
+      TimeAxisLabel label = m_timeAxisLabels.get(i);
+      if (label.offset - width < lastOffset)
+      {
+        label.view.setVisibility(View.INVISIBLE);
+      }
+      else
+      {
+        label.view.setVisibility(View.VISIBLE);
+        lastOffset = label.offset;
+      }
+    }
+
+
+
+    /*boolean newAnchorRequired = true;
 
     int anchorIndex = 0;
     while (anchorIndex < m_timeAxisLabels.size() && m_timeAxisLabels.get(anchorIndex).timestamp != m_timeAxisLabelsAnchorTimestamp)
@@ -873,7 +891,7 @@ public class TimeGraph extends ConstraintLayout
         label.view.setVisibility(View.VISIBLE);
         lastOffset = label.offset;
       }
-    }
+    }*/
   }
 
   public void setRangeHighlights(@NonNull float[] values, @NonNull int[] colors, @DisplayMode int displayMode, boolean animate)
