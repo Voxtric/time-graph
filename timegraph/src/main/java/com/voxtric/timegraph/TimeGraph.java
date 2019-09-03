@@ -54,7 +54,7 @@ public class TimeGraph extends ConstraintLayout
   private static final @ColorInt int DEFAULT_NO_DATA_TEXT_COLOR = Color.BLACK;
 
   private static final boolean DEFAULT_SHOW_REFRESH_PROGRESS = true;
-  private static final @ColorInt int DEFAULT_GRAPH_BACKGROUND_COLOR = Color.parseColor("#EFF0F1");
+  private static final @ColorInt int DEFAULT_GRAPH_BACKGROUND_COLOR = Color.parseColor("#E6E6E6");
   private static final @ColorInt int DEFAULT_DATA_LINE_COLOR = Color.BLACK;
 
   private static final boolean DEFAULT_ALLOW_SCROLL = true;
