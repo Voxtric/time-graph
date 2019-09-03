@@ -11,6 +11,7 @@ import com.voxtric.timegraph.GraphDataProvider;
 import com.voxtric.timegraph.TimeAxisLabelData;
 import com.voxtric.timegraph.TimeGraph;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements GraphDataProvider
@@ -44,7 +45,7 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
                                      new int[] { red, green, yellow, red },
                                      TimeGraph.DISPLAY_MODE_UNDERLINE_WITH_FADE,
                                      true);
-      m_timeGraph.setVisibleDataPeriod(0, 86400000L * 5L, MainActivity.this, true);
+      m_timeGraph.setVisibleDataPeriod(0, 86400000L, MainActivity.this, true);
 
       m_timeGraph.postDelayed(new Runnable()
       {
@@ -66,15 +67,16 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
   @Override
   public GraphData[] getData(long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp)
   {
-    /*try
+    ArrayList<GraphData> data = new ArrayList<>();
+
+    Random random = new Random(2);
+    long timestamp = startTimestamp;
+    while (timestamp < endTimestamp)
     {
-      Thread.sleep(1000);
+      data.add(new GraphData(timestamp, random.nextFloat() * 16.0f));
+      timestamp += 86400000L / 8;
     }
-    catch (InterruptedException e)
-    {
-      e.printStackTrace();
-    }*/
-    return m_testData;
+    return data.toArray(new GraphData[0]);
   }
 
   @Override

@@ -43,10 +43,6 @@ public class TimeAxisLabelData
       {
         labelData = labelDays(data);
       }
-      else if (timeDifference / MILLISECONDS_IN_WEEK < MAX_LABELS)
-      {
-        labelData = labelWeeks(data);
-      }
       else
       {
         labelData = labelMonths(data);
@@ -153,7 +149,7 @@ public class TimeAxisLabelData
         Date date = calendar.getTime();
         DateFormat dateFormat = DateFormat.getTimeInstance(DateFormat.SHORT);
         timeAxisLabelData.add(new TimeAxisLabelData(calendar.getTimeInMillis(), dateFormat.format(date)));
-        calendar.add(Calendar.HOUR_OF_DAY, 1);
+        calendar.add(Calendar.HOUR, 1);
       }
     }
 
