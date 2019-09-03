@@ -140,6 +140,9 @@ public class TimeGraph extends ConstraintLayout
   private @DisplayMode
   int m_rangeHighlightingDisplayMode = DISPLAY_MODE_BACKGROUND;
 
+  private OnPeriodChangeListener m_onPeriodChangeListener = null;
+  private OnRefreshListener m_onRefreshListener = null;
+
   public TimeGraph(Context context)
   {
     super(context);
@@ -969,6 +972,10 @@ public class TimeGraph extends ConstraintLayout
                 m_endTimestamp = m_lastGraphDataEntry.timestamp;
                 floatTimeDifference = (float)(m_endTimestamp - m_startTimestamp);
               }
+              if (m_onPeriodChangeListener != null)
+              {
+                m_onPeriodChangeListener.onPeriodChanged(m_startTimestamp, m_endTimestamp);
+              }
 
               float startingYScale = animate ? 0.0f : 1.0f;
               createDataLineStrip(data, floatTimeDifference, valueDifference, startingYScale);
@@ -982,6 +989,11 @@ public class TimeGraph extends ConstraintLayout
               m_beforeScalingStartTimestamp = Long.MIN_VALUE;
               m_beforeScalingEndTimestamp = Long.MAX_VALUE;
             }
+          }
+
+          if (m_onRefreshListener != null)
+          {
+            m_onRefreshListener.onRefresh(m_startTimestamp, m_endTimestamp, data);
           }
 
           m_refreshing = false;
@@ -1036,6 +1048,9 @@ public class TimeGraph extends ConstraintLayout
 
   private void clearDataLineStrip()
   {
+    m_startTimestamp = 0L;
+    m_endTimestamp = 0L;
+
     m_hasData = false;
     if (m_dataLineStrip != null)
     {
@@ -1061,6 +1076,11 @@ public class TimeGraph extends ConstraintLayout
         m_noDataView.setVisibility(m_showNoDataText ? View.VISIBLE : View.INVISIBLE);
       }
     });
+
+    if (m_onRefreshListener != null)
+    {
+      m_onRefreshListener.onRefresh(0L, 0L, null);
+    }
   }
 
   private void createDataLineStrip(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
@@ -1628,6 +1648,11 @@ public class TimeGraph extends ConstraintLayout
         m_labelMarkersLine.setXOffset(openGlXOffset);
       }
       m_graphSurfaceView.requestRender();
+
+      if (m_onPeriodChangeListener != null)
+      {
+        m_onPeriodChangeListener.onPeriodChanged(m_startTimestamp, m_endTimestamp);
+      }
     }
   }
 
@@ -1719,6 +1744,11 @@ public class TimeGraph extends ConstraintLayout
           m_labelMarkersLine.setXScale(m_xScale, openGlXScalePosition);
         }
         m_graphSurfaceView.requestRender();
+
+        if (m_onPeriodChangeListener != null)
+        {
+          m_onPeriodChangeListener.onPeriodChanged(m_startTimestamp, m_endTimestamp);
+        }
       }
     }
   }
@@ -1856,6 +1886,16 @@ public class TimeGraph extends ConstraintLayout
     });
   }
 
+  public void setOnPeriodChangedListener(OnPeriodChangeListener listener)
+  {
+    m_onPeriodChangeListener = listener;
+  }
+
+  public void setOnRefreshListener(OnRefreshListener listener)
+  {
+    m_onRefreshListener = listener;
+  }
+
   private static TextView createTextView(Context context, float textSize, int textColor)
   {
     TextView textView = new TextView(context);
@@ -1918,5 +1958,15 @@ public class TimeGraph extends ConstraintLayout
       }
     }
     return intersected;
+  }
+
+  public interface OnPeriodChangeListener
+  {
+    void onPeriodChanged(long startTimestamp, long endTimestamp);
+  }
+
+  public interface OnRefreshListener
+  {
+    void onRefresh(long startTimestamp, long endTimestamp, GraphData[] data);
   }
 }
