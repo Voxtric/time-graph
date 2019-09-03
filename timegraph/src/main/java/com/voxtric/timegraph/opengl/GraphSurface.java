@@ -4,6 +4,8 @@ import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.view.ViewGroup;
+import android.widget.ScrollView;
 
 import androidx.annotation.ColorInt;
 
@@ -18,6 +20,8 @@ public class GraphSurface extends GLSurfaceView
   private float m_previousPixelDistance = 0.0f;
   private boolean m_scaling = false;
   private boolean m_ignoreScroll = false;
+
+  private ViewGroup[] m_disallowTouchViews = null;
 
   public GraphSurface(Context context)
   {
@@ -63,11 +67,29 @@ public class GraphSurface extends GLSurfaceView
       m_previousPixelX = motionEvent.getX();
       m_ignoreScroll = false;
       handled = true;
+
+      if (m_disallowTouchViews != null)
+      {
+        for (ViewGroup view : m_disallowTouchViews)
+        {
+          view.requestDisallowInterceptTouchEvent(true);
+        }
+      }
+
       break;
 
     case MotionEvent.ACTION_UP:
       m_timeGraph.refresh(false);
       handled = true;
+
+      if (m_disallowTouchViews != null)
+      {
+        for (ViewGroup view : m_disallowTouchViews)
+        {
+          view.requestDisallowInterceptTouchEvent(false);
+        }
+      }
+
       break;
 
     case MotionEvent.ACTION_POINTER_DOWN:
@@ -117,6 +139,11 @@ public class GraphSurface extends GLSurfaceView
     }
 
     return handled;
+  }
+
+  public void setDisallowHorizontalScrollViews(ViewGroup[] views)
+  {
+    m_disallowTouchViews = views;
   }
 
   public void setBackgroundColor(final @ColorInt int color)

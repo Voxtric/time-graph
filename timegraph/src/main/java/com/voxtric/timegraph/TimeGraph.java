@@ -13,6 +13,7 @@ import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -258,6 +259,11 @@ public class TimeGraph extends ConstraintLayout
       m_endTimestamp = bundle.getLong("m_endTimestamp");
     }
     super.onRestoreInstanceState(state);
+  }
+
+  public void setDisallowHorizontalScrollViews(ViewGroup[] views)
+  {
+    m_graphSurfaceView.setDisallowHorizontalScrollViews(views);
   }
 
   public void setShowValueAxis(boolean value)
