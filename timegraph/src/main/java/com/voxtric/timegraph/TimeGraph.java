@@ -911,15 +911,15 @@ public class TimeGraph extends ConstraintLayout
     final long timeDifference = m_endTimestamp - m_startTimestamp;
     if (timeDifference > 0L)
     {
-      createNewDataLineStrip(timeDifference, animateNew);
+      createDataRepresentations(timeDifference, animateNew);
     }
     else
     {
-      clearDataLineStrip();
+      clearDataRepresentations();
     }
   }
 
-  private void createNewDataLineStrip(final long timeDifference, final boolean animate)
+  private void createDataRepresentations(final long timeDifference, final boolean animate)
   {
     if (m_refreshing)
     {
@@ -966,7 +966,6 @@ public class TimeGraph extends ConstraintLayout
             {
               m_firstGraphDataEntry = data[0];
               m_lastGraphDataEntry = data[data.length - 1];
-              setTimeAxisLabels(m_dataProvider.getLabelsForData(data));
               float floatTimeDifference = (float)timeDifference;
               if (m_firstGraphDataEntry.timestamp > m_startTimestamp)
               {
@@ -982,6 +981,7 @@ public class TimeGraph extends ConstraintLayout
               {
                 m_onPeriodChangeListener.onPeriodChanged(m_startTimestamp, m_endTimestamp);
               }
+              setTimeAxisLabels(m_dataProvider.getLabelsForData(data));
 
               float startingYScale = animate ? 0.0f : 1.0f;
               createDataLineStrip(data, floatTimeDifference, valueDifference, startingYScale);
@@ -1052,7 +1052,7 @@ public class TimeGraph extends ConstraintLayout
     }
   }
 
-  private void clearDataLineStrip()
+  private void clearDataRepresentations()
   {
     m_startTimestamp = 0L;
     m_endTimestamp = 0L;
