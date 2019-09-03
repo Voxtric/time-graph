@@ -135,7 +135,7 @@ public class TimeGraph extends ConstraintLayout
   private RelativeLayout m_timeAxisLabelsLayoutView = null;
   private ArrayList<TimeAxisLabel> m_timeAxisLabels = new ArrayList<>();
   private Drawable m_timeAxisLabelsBackground = null;
-  private long m_timeAxisLabelsAnchorTimestamp = 0L;
+  private long m_timeAxisLabelsAnchorTimestamp = Long.MIN_VALUE;
 
   private float[] m_rangeHighlightingValues = null;
   private int[] m_rangeHighlightingColors = null;
@@ -745,7 +745,7 @@ public class TimeGraph extends ConstraintLayout
 
             timeAxisLabel.timestamp = timeAxisLabelData[index].timestamp;
             timeAxisLabel.view.setText(timeAxisLabelData[index].label);
-            repositionTimeAxisLabel(timeAxisLabel);
+            //repositionTimeAxisLabel(timeAxisLabel);
           }
 
           for (int i = m_timeAxisLabels.size() - 1; i >= index; i--)
@@ -777,7 +777,6 @@ public class TimeGraph extends ConstraintLayout
             @Override
             public void run()
             {
-              // TODO: Figure out this.
               if (!m_timeAxisLabels.isEmpty())
               {
                 setTimeAxisLabelsVisibility();
@@ -817,11 +816,34 @@ public class TimeGraph extends ConstraintLayout
 
   private void setTimeAxisLabelsVisibility()
   {
-    float width = m_timeAxisLabels.get(0).view.getWidth() * TIME_AXIS_LABEL_WIDTH_MODIFIER;
+    boolean newAnchorRequired = true;
+
+    int anchorIndex = 0;
+    while (anchorIndex < m_timeAxisLabels.size() && m_timeAxisLabels.get(anchorIndex).timestamp != m_timeAxisLabelsAnchorTimestamp)
+    {
+      anchorIndex++;
+    }
+
+    if (anchorIndex == m_timeAxisLabels.size())
+    {
+      for (int i = 0; i < m_timeAxisLabels.size(); i++)
+      {
+        if (m_timeAxisLabels.get(i).timestamp > m_startTimestamp && m_timeAxisLabels.get(i).timestamp < m_endTimestamp)
+        {
+          m_timeAxisLabelsAnchorTimestamp = m_timeAxisLabels.get(i).timestamp;
+          anchorIndex = i;
+          newAnchorRequired = false;
+          break;
+        }
+      }
+    }
+
+    float width = m_timeAxisLabels.get(anchorIndex).view.getWidth() * TIME_AXIS_LABEL_WIDTH_MODIFIER;
     float lastOffset = -Float.MAX_VALUE;
-    for (int i = 0; i < m_timeAxisLabels.size(); i++)
+    for (int i = anchorIndex; i < m_timeAxisLabels.size(); i++)
     {
       TimeAxisLabel label = m_timeAxisLabels.get(i);
+      repositionTimeAxisLabel(label);
       if (label.offset - width < lastOffset)
       {
         label.view.setVisibility(View.INVISIBLE);
@@ -830,10 +852,26 @@ public class TimeGraph extends ConstraintLayout
       {
         label.view.setVisibility(View.VISIBLE);
         lastOffset = label.offset;
-        if (label.timestamp > m_startTimestamp && label.timestamp < m_endTimestamp)
+        if (newAnchorRequired && label.timestamp > m_startTimestamp && label.timestamp < m_endTimestamp)
         {
           m_timeAxisLabelsAnchorTimestamp = label.timestamp;
+          newAnchorRequired = false;
         }
+      }
+    }
+    lastOffset = Float.MAX_VALUE;
+    for (int i = anchorIndex; i >= 0; i--)
+    {
+      TimeAxisLabel label = m_timeAxisLabels.get(i);
+      repositionTimeAxisLabel(label);
+      if (label.offset + width > lastOffset)
+      {
+        label.view.setVisibility(View.INVISIBLE);
+      }
+      else
+      {
+        label.view.setVisibility(View.VISIBLE);
+        lastOffset = label.offset;
       }
     }
   }

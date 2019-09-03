@@ -7,7 +7,6 @@ class TimeAxisLabel
   long timestamp;
   float offset;
   TextView view;
-  boolean anchor = false;
 
   TimeAxisLabel(TextView view)
   {
