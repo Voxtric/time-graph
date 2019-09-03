@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
                                      new int[] { red, green, yellow, red },
                                      TimeGraph.DISPLAY_MODE_UNDERLINE_WITH_FADE,
                                      true);
-      m_timeGraph.setVisibleDataPeriod(0, 86400000L * 5L, MainActivity.this, true);
+      //m_timeGraph.setVisibleDataPeriod(0, 86400000L * 5L, MainActivity.this, true);
 
       m_timeGraph.postDelayed(new Runnable()
       {

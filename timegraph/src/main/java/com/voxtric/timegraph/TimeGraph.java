@@ -112,6 +112,7 @@ public class TimeGraph extends ConstraintLayout
   private boolean m_newRefreshRequested = false;
   private ProgressBar m_refreshProgressView = null;
   private TextView m_noDataView = null;
+  private Boolean m_hasData = false;
 
   private GraphSurface m_graphSurfaceView = null;
   private float m_xOffset = 0.0f;
@@ -951,7 +952,8 @@ public class TimeGraph extends ConstraintLayout
                                             m_endTimestamp);
             }
 
-            if (data != null && data.length > 0)
+            m_hasData = data != null && data.length > 0;
+            if (m_hasData)
             {
               m_firstGraphDataEntry = data[0];
               m_lastGraphDataEntry = data[data.length - 1];
@@ -1034,6 +1036,7 @@ public class TimeGraph extends ConstraintLayout
 
   private void clearDataLineStrip()
   {
+    m_hasData = false;
     if (m_dataLineStrip != null)
     {
       m_graphSurfaceView.removeRenderable(m_dataLineStrip);
@@ -1565,7 +1568,7 @@ public class TimeGraph extends ConstraintLayout
 
   public void scrollData(float normalisedScrollDelta)
   {
-    if (m_allowScroll)
+    if (m_allowScroll && m_hasData)
     {
       long timeDifference = m_endTimestamp - m_startTimestamp;
 
@@ -1630,7 +1633,7 @@ public class TimeGraph extends ConstraintLayout
 
   public void scaleData(float normalisedScaleDelta, float normalisedXCentre)
   {
-    if (m_allowScale && (dataFits() || normalisedScaleDelta > 0.0f))
+    if (m_allowScale && m_hasData && (dataFits() || normalisedScaleDelta > 0.0f))
     {
       if (m_normalisedForcedXCentre != -1.0f)
       {
