@@ -724,8 +724,6 @@ public class TimeGraph extends ConstraintLayout
         {
           final int initialTimeAxisHeight = m_timeAxisLabelsLayoutView.getHeight();
 
-          //double difference = (double)(m_endTimestamp - m_startTimestamp);
-
           // Add the new labels and create graph markers.
           int anchorIndex = -1;
           float[] labelMarkerCoords = new float[timeAxisLabelData.length * 4];
@@ -737,7 +735,6 @@ public class TimeGraph extends ConstraintLayout
               label = new TimeAxisLabel(timeAxisLabelData[i].timestamp, createTextView(getContext(), m_timeAxisTextSizeSp, m_timeAxisTextColor));
               label.view.setBackground(m_timeAxisLabelsBackground);
               label.view.setPadding(dpToPx(getContext(), 3), 0, 0, 0);
-              repositionTimeAxisLabel(label);
               m_timeAxisLabelsLayoutView.addView(label.view);
               m_timeAxisLabels.append(label.timestamp, label);
             }
@@ -745,6 +742,7 @@ public class TimeGraph extends ConstraintLayout
             {
               anchorIndex = i;
             }
+            repositionTimeAxisLabel(label);
             label.view.setText(timeAxisLabelData[i].label);
 
             int coordsIndex = i * 4;
@@ -763,17 +761,42 @@ public class TimeGraph extends ConstraintLayout
           }
 
           // Remove the unused labels.
-          int removeAfterIndex = m_timeAxisLabels.indexOfKey(timeAxisLabelData[timeAxisLabelData.length - 1].timestamp);
-          for (int i = m_timeAxisLabels.size() - 1; i > removeAfterIndex; i--)
+          if (anchorIndex != -1)
           {
-            m_timeAxisLabelsLayoutView.removeView(m_timeAxisLabels.valueAt(i).view);
-            m_timeAxisLabels.removeAt(i);
+            // Same time scale.
+            int removeAfterIndex = m_timeAxisLabels.indexOfKey(timeAxisLabelData[timeAxisLabelData.length - 1].timestamp);
+            for (int i = m_timeAxisLabels.size() - 1; i > removeAfterIndex; i--)
+            {
+              m_timeAxisLabelsLayoutView.removeView(m_timeAxisLabels.valueAt(i).view);
+              m_timeAxisLabels.removeAt(i);
+            }
+            int removeBeforeIndex = m_timeAxisLabels.indexOfKey(timeAxisLabelData[0].timestamp);
+            for (int i = removeBeforeIndex - 1; i >= 0; i--)
+            {
+              m_timeAxisLabelsLayoutView.removeView(m_timeAxisLabels.valueAt(i).view);
+              m_timeAxisLabels.removeAt(i);
+            }
           }
-          int removeBeforeIndex = m_timeAxisLabels.indexOfKey(timeAxisLabelData[0].timestamp);
-          for (int i = removeBeforeIndex - 1; i >= 0; i--)
+          else
           {
-            m_timeAxisLabelsLayoutView.removeView(m_timeAxisLabels.valueAt(i).view);
-            m_timeAxisLabels.removeAt(i);
+            // Different time scale.
+            int dataIndex = 0;
+            int incorrectTimeAxisLabelCount = m_timeAxisLabels.size();
+            for (int i = 0; i < incorrectTimeAxisLabelCount; i++)
+            {
+              TimeAxisLabel label = m_timeAxisLabels.valueAt(i);
+              if (label.timestamp != timeAxisLabelData[dataIndex].timestamp)
+              {
+                m_timeAxisLabelsLayoutView.removeView(label.view);
+                m_timeAxisLabels.removeAt(i);
+                incorrectTimeAxisLabelCount--;
+                i--;
+              }
+              else
+              {
+                dataIndex++;
+              }
+            }
           }
 
           final int finalAnchorIndex = anchorIndex;
