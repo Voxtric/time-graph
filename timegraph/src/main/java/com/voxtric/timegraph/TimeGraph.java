@@ -950,18 +950,6 @@ public class TimeGraph extends ConstraintLayout
       }
     }
 
-    if (displayMode == DISPLAY_MODE_BACKGROUND_WITH_FADE || displayMode == DISPLAY_MODE_UNDERLINE_WITH_FADE)
-    {
-      for (int i = 1; i < values.length; i++)
-      {
-        float modifier = (m_valueAxisMax - m_valueAxisMin) * HALF_FADE_MULTIPLIER;
-        if (values[i] - modifier <= values[i - 1] + modifier)
-        {
-          throw new IllegalArgumentException("Not enough distance between range highlight values to use fade.");
-        }
-      }
-    }
-
     m_rangeHighlightingValues = values;
     m_rangeHighlightingColors = colors;
     m_rangeHighlightingDisplayMode = displayMode;
@@ -1661,12 +1649,15 @@ public class TimeGraph extends ConstraintLayout
     float[] rangeHighlightingValues = new float[m_rangeHighlightingColors.length * 2];
     rangeHighlightingValues[0] = m_rangeHighlightingValues[0];
     rangeHighlightingValues[rangeHighlightingValues.length - 1] = m_rangeHighlightingValues[m_rangeHighlightingValues.length - 1];
+
+    float baseModifier = valueDifference * HALF_FADE_MULTIPLIER;
     int rangeHighlightValuesIndex = 1;
-    float modifier = valueDifference * HALF_FADE_MULTIPLIER;
     for (int i = 1; i < m_rangeHighlightingValues.length - 1; i++)
     {
-      rangeHighlightingValues[rangeHighlightValuesIndex] = m_rangeHighlightingValues[i] - modifier;
-      rangeHighlightingValues[rangeHighlightValuesIndex + 1] = m_rangeHighlightingValues[i] + modifier;
+      float lowerModifier = Math.min(baseModifier, m_rangeHighlightingValues[i] - m_rangeHighlightingValues[i - 1]);
+      float upperModifier = Math.min(baseModifier, m_rangeHighlightingValues[i + 1] - m_rangeHighlightingValues[i]);
+      rangeHighlightingValues[rangeHighlightValuesIndex] = m_rangeHighlightingValues[i] - lowerModifier;
+      rangeHighlightingValues[rangeHighlightValuesIndex + 1] = m_rangeHighlightingValues[i] + upperModifier;
       rangeHighlightValuesIndex += 2;
     }
     return rangeHighlightingValues;
