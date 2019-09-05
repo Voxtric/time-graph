@@ -1777,31 +1777,27 @@ public class TimeGraph extends ConstraintLayout
       }
       else
       {
-        // TODO: Figure out what's wrong with this.
         int timeAxisLabelCount = m_timeAxisLabels.size();
-        if (timeAxisLabelCount > 0)
+        float lastOffset = -Float.MAX_VALUE;
+        for (int i = 0; i < timeAxisLabelCount; i++)
         {
-          TimeAxisLabel firstLabel = m_timeAxisLabels.valueAt(0);
-          float width = firstLabel.view.getWidth() * TIME_AXIS_LABEL_WIDTH_MODIFIER;
-          float lastOffset = firstLabel.offset - (width * 2.0f);
-          for (int i = 0; i < timeAxisLabelCount; i++)
+          TimeAxisLabel label = m_timeAxisLabels.valueAt(i);
+          float scaledLabelOffset = (float)scaleValue(0.0,
+                                                  m_graphSurfaceView.getWidth(),
+                                                  label.offset,
+                                                  m_xScale,
+                                                  normalisedXCentre);
+          label.view.animate().translationX(scaledLabelOffset).setDuration(0).start();
+
+          float width = label.view.getWidth() * TIME_AXIS_LABEL_WIDTH_MODIFIER;
+          if (scaledLabelOffset - width < lastOffset)
           {
-            TimeAxisLabel label = m_timeAxisLabels.valueAt(i);
-            float labelPosition = (float)scaleValue(0.0,
-                                                    m_graphSurfaceView.getWidth(),
-                                                    label.offset,
-                                                    m_xScale,
-                                                    normalisedXCentre);
-            label.view.animate().translationX(labelPosition).setDuration(0).start();
-            if (labelPosition - width < lastOffset)
-            {
-              label.view.setVisibility(View.INVISIBLE);
-            }
-            else
-            {
-              label.view.setVisibility(View.VISIBLE);
-              lastOffset = labelPosition;
-            }
+            label.view.setVisibility(View.INVISIBLE);
+          }
+          else
+          {
+            label.view.setVisibility(View.VISIBLE);
+            lastOffset = scaledLabelOffset;
           }
         }
 
