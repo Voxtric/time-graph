@@ -12,7 +12,11 @@
     <com.voxtric.timegraph.TimeGraph
         android:id="@+id/time_graph"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="400dp"
         app:valueAxis_min="0.0"
         app:valueAxis_max="16.0"/>
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 </LinearLayout>

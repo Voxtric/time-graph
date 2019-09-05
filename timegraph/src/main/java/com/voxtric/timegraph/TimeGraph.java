@@ -263,6 +263,49 @@ public class TimeGraph extends ConstraintLayout
     super.onRestoreInstanceState(state);
   }
 
+  @Override
+  protected void onSizeChanged(final int width, final int height, final int oldWidth, final int oldHeight)
+  {
+    super.onSizeChanged(width, height, oldHeight, oldHeight);
+
+    post(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        if (width != oldWidth)
+        {
+          int timeAxisLabelCount = m_timeAxisLabels.size();
+          for (int i = 0; i < timeAxisLabelCount; i++)
+          {
+            repositionTimeAxisLabel(m_timeAxisLabels.valueAt(i));
+          }
+          post(new Runnable()
+          {
+            @Override
+            public void run()
+            {
+              if (height != oldHeight)
+              {
+                for (TextView textView : m_valueAxisMidViews)
+                {
+                  repositionValueAxisLabel(textView);
+                }
+              }
+            }
+          });
+        }
+        else if (height != oldHeight)
+        {
+          for (TextView textView : m_valueAxisMidViews)
+          {
+            repositionValueAxisLabel(textView);
+          }
+        }
+      }
+    });
+  }
+
   public boolean hasEnoughData()
   {
     return m_hasEnoughData;
