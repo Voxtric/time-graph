@@ -1046,7 +1046,7 @@ public class TimeGraph extends ConstraintLayout
               }
               if (m_onPeriodChangeListener != null)
               {
-                m_onPeriodChangeListener.onPeriodChanged(m_startTimestamp, m_endTimestamp);
+                m_onPeriodChangeListener.onPeriodChanged(TimeGraph.this, m_startTimestamp, m_endTimestamp);
               }
               setTimeAxisLabels(m_dataProvider.getLabelsForData(data));
 
@@ -1081,7 +1081,7 @@ public class TimeGraph extends ConstraintLayout
 
           if (m_onRefreshListener != null)
           {
-            m_onRefreshListener.onRefresh(m_startTimestamp, m_endTimestamp, data);
+            m_onRefreshListener.onRefresh(TimeGraph.this, m_startTimestamp, m_endTimestamp, data);
           }
 
           m_refreshing = false;
@@ -1164,7 +1164,7 @@ public class TimeGraph extends ConstraintLayout
 
     if (m_onRefreshListener != null)
     {
-      m_onRefreshListener.onRefresh(0L, 0L, null);
+      m_onRefreshListener.onRefresh(this, 0L, 0L, null);
     }
   }
 
@@ -1738,7 +1738,7 @@ public class TimeGraph extends ConstraintLayout
 
       if (m_onPeriodChangeListener != null)
       {
-        m_onPeriodChangeListener.onPeriodChanged(m_startTimestamp, m_endTimestamp);
+        m_onPeriodChangeListener.onPeriodChanged(this, m_startTimestamp, m_endTimestamp);
       }
     }
   }
@@ -1834,7 +1834,7 @@ public class TimeGraph extends ConstraintLayout
 
         if (m_onPeriodChangeListener != null)
         {
-          m_onPeriodChangeListener.onPeriodChanged(m_startTimestamp, m_endTimestamp);
+          m_onPeriodChangeListener.onPeriodChanged(this, m_startTimestamp, m_endTimestamp);
         }
       }
     }
@@ -2049,11 +2049,11 @@ public class TimeGraph extends ConstraintLayout
 
   public interface OnPeriodChangeListener
   {
-    void onPeriodChanged(long startTimestamp, long endTimestamp);
+    void onPeriodChanged(TimeGraph graph, long startTimestamp, long endTimestamp);
   }
 
   public interface OnRefreshListener
   {
-    void onRefresh(long startTimestamp, long endTimestamp, GraphData[] data);
+    void onRefresh(TimeGraph graph, long startTimestamp, long endTimestamp, GraphData[] data);
   }
 }
