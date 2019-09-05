@@ -4,7 +4,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.Color;
 import android.os.Bundle;
-import android.view.ViewGroup;
 
 import com.voxtric.timegraph.GraphData;
 import com.voxtric.timegraph.GraphDataProvider;
@@ -16,7 +15,8 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements GraphDataProvider
 {
-  TimeGraph m_timeGraph = null;
+  private TimeGraph m_timeGraph = null;
+  private boolean m_dataGiven = false;
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
@@ -58,17 +58,25 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
   @Override
   public GraphData[] getData(long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp)
   {
-    ArrayList<GraphData> data = new ArrayList<>();
-
-    Random random = new Random(2);
-    long timestamp = startTimestamp;
-    while (timestamp < endTimestamp)
+    if (!m_dataGiven)
     {
-      data.add(new GraphData(timestamp, random.nextFloat() * 16.0f));
-      timestamp += 86400000L / 8;
-    }
+      m_dataGiven = true;
+      ArrayList<GraphData> data = new ArrayList<>();
 
-    return data.toArray(new GraphData[0]);
+      Random random = new Random(2);
+      long timestamp = startTimestamp;
+      while (timestamp < endTimestamp)
+      {
+        data.add(new GraphData(timestamp, random.nextFloat() * 16.0f));
+        timestamp += 86400000L / 8;
+      }
+
+      return data.toArray(new GraphData[0]);
+    }
+    else
+    {
+      return new GraphData[0];
+    }
   }
 
   @Override

@@ -1062,6 +1062,21 @@ public class TimeGraph extends ConstraintLayout
               m_beforeScalingStartTimestamp = Long.MIN_VALUE;
               m_beforeScalingEndTimestamp = Long.MAX_VALUE;
             }
+            else
+            {
+              if (m_dataLineStrip != null)
+              {
+                m_graphSurfaceView.removeRenderable(m_dataLineStrip);
+              }
+              if (m_labelMarkersLine != null)
+              {
+                m_graphSurfaceView.removeRenderable(m_labelMarkersLine);
+              }
+              if (m_rangeHighlightMesh != null)
+              {
+                m_graphSurfaceView.removeRenderable(m_rangeHighlightMesh);
+              }
+            }
           }
 
           if (m_onRefreshListener != null)
