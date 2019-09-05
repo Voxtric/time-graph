@@ -114,7 +114,7 @@ public class TimeGraph extends ConstraintLayout
   private boolean m_newRefreshRequested = false;
   private ProgressBar m_refreshProgressView = null;
   private TextView m_noDataView = null;
-  private Boolean m_hasData = false;
+  private Boolean m_hasEnoughData = false;
 
   private GraphSurface m_graphSurfaceView = null;
   private float m_xOffset = 0.0f;
@@ -134,7 +134,6 @@ public class TimeGraph extends ConstraintLayout
   private ArrayList<TextView> m_valueAxisMidViews = new ArrayList<>();
 
   private RelativeLayout m_timeAxisLabelsLayoutView = null;
-  //private ArrayList<TimeAxisLabel> m_timeAxisLabels = new ArrayList<>();
   private LongSparseArray<TimeAxisLabel> m_timeAxisLabels = new LongSparseArray<>();
   private Drawable m_timeAxisLabelsBackground = null;
   private long m_timeAxisLabelsAnchorTimestamp = Long.MIN_VALUE;
@@ -262,6 +261,11 @@ public class TimeGraph extends ConstraintLayout
       m_endTimestamp = bundle.getLong("m_endTimestamp");
     }
     super.onRestoreInstanceState(state);
+  }
+
+  public boolean hasEnoughData()
+  {
+    return m_hasEnoughData;
   }
 
   public void setDisallowHorizontalScrollViews(ViewGroup[] views)
@@ -1024,8 +1028,8 @@ public class TimeGraph extends ConstraintLayout
                                             m_endTimestamp);
             }
 
-            m_hasData = data != null && data.length > 0;
-            if (m_hasData)
+            m_hasEnoughData = data != null && data.length > 1;
+            if (m_hasEnoughData)
             {
               m_firstGraphDataEntry = data[0];
               m_lastGraphDataEntry = data[data.length - 1];
@@ -1066,19 +1070,16 @@ public class TimeGraph extends ConstraintLayout
           }
 
           m_refreshing = false;
-          if (m_showRefreshProgress)
+          final boolean dataApplied = data != null && data.length > 1;
+          post(new Runnable()
           {
-            final boolean dataApplied = data != null && data.length > 0;
-            post(new Runnable()
+            @Override
+            public void run()
             {
-              @Override
-              public void run()
-              {
-                m_refreshProgressView.setVisibility(View.INVISIBLE);
-                m_noDataView.setVisibility(!dataApplied && m_showNoDataText ? View.VISIBLE : View.INVISIBLE);
-              }
-            });
-          }
+              m_refreshProgressView.setVisibility(View.INVISIBLE);
+              m_noDataView.setVisibility(!dataApplied && m_showNoDataText ? View.VISIBLE : View.INVISIBLE);
+            }
+          });
 
           if (animate)
           {
@@ -1120,7 +1121,7 @@ public class TimeGraph extends ConstraintLayout
     m_startTimestamp = 0L;
     m_endTimestamp = 0L;
 
-    m_hasData = false;
+    m_hasEnoughData = false;
     if (m_dataLineStrip != null)
     {
       m_graphSurfaceView.removeRenderable(m_dataLineStrip);
@@ -1657,7 +1658,7 @@ public class TimeGraph extends ConstraintLayout
 
   public void scrollData(float normalisedScrollDelta)
   {
-    if (m_allowScroll && m_hasData)
+    if (m_allowScroll && m_hasEnoughData)
     {
       long timeDifference = m_endTimestamp - m_startTimestamp;
 
@@ -1729,7 +1730,7 @@ public class TimeGraph extends ConstraintLayout
 
   public void scaleData(float normalisedScaleDelta, float normalisedXCentre)
   {
-    if (m_allowScale && m_hasData && (dataFits() || normalisedScaleDelta > 0.0f))
+    if (m_allowScale && m_hasEnoughData && (dataFits() || normalisedScaleDelta > 0.0f))
     {
       if (m_normalisedForcedXCentre != -1.0f)
       {

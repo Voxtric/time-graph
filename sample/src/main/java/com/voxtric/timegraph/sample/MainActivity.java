@@ -16,20 +16,11 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements GraphDataProvider
 {
-  GraphData[] m_testData = new GraphData[250];
   TimeGraph m_timeGraph = null;
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
   {
-    Random random = new Random(2);
-    for (int i = 0; i < m_testData.length; i++)
-    {
-      m_testData[i] = new GraphData((i * 86400000L) + (Math.abs(random.nextLong()) % 86000000L), random.nextFloat() * 16.0f);
-    }
-
-
-
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
@@ -76,6 +67,7 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
       data.add(new GraphData(timestamp, random.nextFloat() * 16.0f));
       timestamp += 86400000L / 8;
     }
+
     return data.toArray(new GraphData[0]);
   }
 
