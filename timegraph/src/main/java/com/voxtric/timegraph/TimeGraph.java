@@ -64,7 +64,7 @@ public class TimeGraph extends ConstraintLayout
 
   private static final float VALUE_AXIS_MARGIN_DP = 4.0f;
   private static final long NEW_DATA_ANIMATION_DURATION = 600L;
-  private static final float HALF_FADE_MULTIPLIER = 0.04f;
+  private static final float HALF_FADE_MULTIPLIER = 0.05f;
   private static final float TIME_AXIS_LABEL_WIDTH_MODIFIER = 1.25f;
 
   @Retention(RetentionPolicy.SOURCE)
