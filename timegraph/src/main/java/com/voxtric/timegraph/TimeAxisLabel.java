@@ -15,10 +15,10 @@ class TimeAxisLabel
     this.view = view;
   }
 
-  TimeAxisLabel(long timestamp, float offset, TextView view)
+  TimeAxisLabel(long timestamp, TextView view)
   {
     this.timestamp = timestamp;
-    this.offset = offset;
+    this.offset = 0.0f;
     this.view = view;
   }
 }
