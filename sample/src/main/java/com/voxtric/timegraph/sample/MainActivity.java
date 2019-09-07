@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.voxtric.timegraph.GraphData;
 import com.voxtric.timegraph.GraphDataProvider;
@@ -36,6 +37,15 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
                                      TimeGraph.DISPLAY_MODE_UNDERLINE_WITH_FADE,
                                      true);
       m_timeGraph.setVisibleDataPeriod(0, 86400000L, MainActivity.this, true);
+
+      m_timeGraph.setOnDataPointClickedListener(new TimeGraph.OnDataPointClickedListener()
+      {
+        @Override
+        public void onDataPointClicked(TimeGraph graph, long timestamp, float value)
+        {
+          Log.e(String.valueOf(timestamp), String.valueOf(value));
+        }
+      });
 
       m_timeGraph.postDelayed(new Runnable()
       {

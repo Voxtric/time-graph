@@ -1201,6 +1201,7 @@ public class TimeGraph extends ConstraintLayout
 
   private void createDataLineStrip(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
   {
+    final ArrayList<ClickableDataPoint> clickableDataPoints = new ArrayList<>();
     float[] coords = new float[data.length * Renderable.COORDS_PER_VERTEX];
     int coordsIndex = 0;
     for (GraphData datum : data)
@@ -1210,6 +1211,11 @@ public class TimeGraph extends ConstraintLayout
       coords[coordsIndex] = (xCoord * 2.0f) - 1.0f;
       coords[coordsIndex + 1] = (yCoord * 2.0f) - 1.0f;
       coordsIndex += 2;
+
+      if (datum.timestamp >= m_startTimestamp && datum.timestamp <= m_endTimestamp)
+      {
+        clickableDataPoints.add(new ClickableDataPoint(xCoord, 1.0f - yCoord, datum));
+      }
     }
     LineStripRenderable oldDataLine = m_dataLineStrip;
     m_dataLineStrip = m_graphSurfaceView.addLineStrip(1, coords, Color.BLACK);
@@ -1219,6 +1225,15 @@ public class TimeGraph extends ConstraintLayout
     {
       m_graphSurfaceView.removeRenderable(oldDataLine);
     }
+
+    post(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        m_graphSurfaceView.setClickablePoints(clickableDataPoints);
+      }
+    });
   }
 
   private void createHighlightMesh(GraphData[] data, float timeDifference, float valueDifference, float startingYScale)
@@ -2007,6 +2022,11 @@ public class TimeGraph extends ConstraintLayout
     });
   }
 
+  public void setOnDataPointClickedListener(OnDataPointClickedListener listener)
+  {
+    m_graphSurfaceView.setOnDataPointClickedListener(listener);
+  }
+
   public void setOnPeriodChangedListener(OnPeriodChangeListener listener)
   {
     m_onPeriodChangeListener = listener;
@@ -2079,6 +2099,11 @@ public class TimeGraph extends ConstraintLayout
       }
     }
     return intersected;
+  }
+
+  public interface OnDataPointClickedListener
+  {
+    void onDataPointClicked(TimeGraph graph, long timestamp, float value);
   }
 
   public interface OnPeriodChangeListener

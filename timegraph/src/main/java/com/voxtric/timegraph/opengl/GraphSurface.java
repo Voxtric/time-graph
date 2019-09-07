@@ -3,18 +3,26 @@ package com.voxtric.timegraph.opengl;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ViewGroup;
-import android.widget.ScrollView;
 
 import androidx.annotation.ColorInt;
 
+import com.voxtric.timegraph.ClickableDataPoint;
 import com.voxtric.timegraph.TimeGraph;
+
+import java.util.ArrayList;
 
 public class GraphSurface extends GLSurfaceView
 {
   private TimeGraph m_timeGraph = null;
   private GraphRenderer m_renderer = null;
+
+  private boolean m_transformed = false;
+  private ArrayList<ClickableDataPoint> m_clickableDataPoints = null;
+  private float m_clickDistanceSquared = -Float.MAX_VALUE;
+  private TimeGraph.OnDataPointClickedListener m_onDataPointClickedListener = null;
 
   private float m_previousPixelX = 0.0f;
   private float m_previousPixelDistance = 0.0f;
@@ -79,8 +87,14 @@ public class GraphSurface extends GLSurfaceView
       break;
 
     case MotionEvent.ACTION_UP:
-      m_timeGraph.refresh(false);
-      handled = true;
+      if (m_transformed)
+      {
+        m_timeGraph.refresh(false);
+      }
+      else if (m_onDataPointClickedListener != null)
+      {
+        clickDataPoint(motionEvent.getX(), motionEvent.getY());
+      }
 
       if (m_disallowTouchViews != null)
       {
@@ -90,6 +104,8 @@ public class GraphSurface extends GLSurfaceView
         }
       }
 
+      m_transformed = false;
+      handled = true;
       break;
 
     case MotionEvent.ACTION_POINTER_DOWN:
@@ -106,6 +122,7 @@ public class GraphSurface extends GLSurfaceView
       break;
 
     case MotionEvent.ACTION_MOVE:
+      m_transformed = true;
       if (!m_scaling)
       {
         if (!m_ignoreScroll)
@@ -139,6 +156,54 @@ public class GraphSurface extends GLSurfaceView
     }
 
     return handled;
+  }
+
+  public void setClickablePoints(ArrayList<ClickableDataPoint> clickableDataPoints)
+  {
+    m_clickableDataPoints = clickableDataPoints.isEmpty() ? null : clickableDataPoints;
+    if (m_clickableDataPoints == null)
+    {
+      m_clickDistanceSquared = -Float.MAX_VALUE;
+    }
+    else
+    {
+      float smallestPointDistance = Float.MAX_VALUE;
+      int clickableDataPointsCount = m_clickableDataPoints.size();
+      for (int i = 1; i < clickableDataPointsCount; i++)
+      {
+        ClickableDataPoint pointA = m_clickableDataPoints.get(i - 1);
+        ClickableDataPoint pointB = m_clickableDataPoints.get(i);
+        float xDifference = (pointB.normalisedX - pointA.normalisedX) * getWidth();
+        float yDifference = (pointB.normalisedY - pointA.normalisedY) * getHeight();
+        float distanceSquared = (xDifference * xDifference) + (yDifference * yDifference);
+        if (distanceSquared < smallestPointDistance)
+        {
+          smallestPointDistance = distanceSquared;
+        }
+      }
+      float actualDistanceHalved = Math.min((float)Math.sqrt(smallestPointDistance), getWidth() * 0.05f) * 0.5f;
+      m_clickDistanceSquared = actualDistanceHalved * actualDistanceHalved;
+    }
+  }
+
+  public void setOnDataPointClickedListener(TimeGraph.OnDataPointClickedListener listener)
+  {
+    m_onDataPointClickedListener = listener;
+  }
+
+  private void clickDataPoint(float x, float y)
+  {
+    for (ClickableDataPoint dataPoint : m_clickableDataPoints)
+    {
+      float xDifference = x - (dataPoint.normalisedX * getWidth());
+      float yDifference = y - (dataPoint.normalisedY * getHeight());
+      float distanceSquared = (xDifference * xDifference) + (yDifference * yDifference);
+      if (distanceSquared < m_clickDistanceSquared)
+      {
+        m_onDataPointClickedListener.onDataPointClicked(m_timeGraph, dataPoint.timestamp, dataPoint.value);
+        break;
+      }
+    }
   }
 
   public void setDisallowHorizontalScrollViews(ViewGroup[] views)
