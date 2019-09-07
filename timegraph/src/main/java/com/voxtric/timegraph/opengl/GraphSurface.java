@@ -3,8 +3,8 @@ package com.voxtric.timegraph.opengl;
 import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
 import androidx.annotation.ColorInt;
@@ -20,6 +20,7 @@ public class GraphSurface extends GLSurfaceView
   private GraphRenderer m_renderer = null;
 
   private boolean m_transformed = false;
+  private long m_clickBeginTimestamp = 0L;
   private ArrayList<ClickableDataPoint> m_clickableDataPoints = null;
   private float m_clickDistanceSquared = -Float.MAX_VALUE;
   private TimeGraph.OnDataPointClickedListener m_onDataPointClickedListener = null;
@@ -72,6 +73,7 @@ public class GraphSurface extends GLSurfaceView
     switch (motionEvent.getActionMasked())
     {
     case MotionEvent.ACTION_DOWN:
+      m_clickBeginTimestamp = System.currentTimeMillis();
       m_previousPixelX = motionEvent.getX();
       m_ignoreScroll = false;
       handled = true;
@@ -91,7 +93,7 @@ public class GraphSurface extends GLSurfaceView
       {
         m_timeGraph.refresh(false);
       }
-      else if (m_onDataPointClickedListener != null)
+      else if (m_onDataPointClickedListener != null && System.currentTimeMillis() - m_clickBeginTimestamp < ViewConfiguration.getLongPressTimeout())
       {
         clickDataPoint(motionEvent.getX(), motionEvent.getY());
       }
