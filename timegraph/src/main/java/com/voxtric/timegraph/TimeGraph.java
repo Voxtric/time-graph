@@ -831,6 +831,12 @@ public class TimeGraph extends ConstraintLayout
             int incorrectTimeAxisLabelCount = m_timeAxisLabels.size();
             for (int i = 0; i < incorrectTimeAxisLabelCount; i++)
             {
+              // Race condition: bail out here to ensure the app doesn't crash.
+              if (dataIndex > timeAxisLabelData.length)
+              {
+                break;
+              }
+
               TimeAxisLabel label = m_timeAxisLabels.valueAt(i);
               if (label.timestamp != timeAxisLabelData[dataIndex].timestamp)
               {
