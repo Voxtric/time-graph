@@ -11,18 +11,26 @@ import com.voxtric.timegraph.GraphDataProvider;
 import com.voxtric.timegraph.TimeAxisLabelData;
 import com.voxtric.timegraph.TimeGraph;
 
-import java.util.ArrayList;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity implements GraphDataProvider
 {
+  private static final long MILLISECONDS_IN_DAY = 86400000L;
+
   private TimeGraph m_timeGraph = null;
+  private GraphData[] m_testData = new GraphData[250];
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
   {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
+
+    Random random = new Random();
+    for (int i = 0; i < m_testData.length; i++)
+    {
+      m_testData[i] = new GraphData((i * MILLISECONDS_IN_DAY / 8), random.nextFloat() * 16.0f);
+    }
 
     m_timeGraph = findViewById(R.id.time_graph);
     if (savedInstanceState == null)
@@ -36,7 +44,7 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
                                      new int[] { red, green, yellow, red },
                                      TimeGraph.DISPLAY_MODE_UNDERLINE_WITH_FADE,
                                      true);
-      m_timeGraph.setVisibleDataPeriod(0, 86400000L, MainActivity.this, true);
+      m_timeGraph.setVisibleDataPeriod(MILLISECONDS_IN_DAY * 10, MILLISECONDS_IN_DAY * 13, MainActivity.this, true);
 
       m_timeGraph.setOnDataPointClickedListener(new TimeGraph.OnDataPointClickedListener()
       {
@@ -67,17 +75,15 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
   @Override
   public GraphData[] getData(long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp)
   {
-    ArrayList<GraphData> data = new ArrayList<>();
-
-    Random random = new Random(2);
-    long timestamp = startTimestamp;
-    while (timestamp < endTimestamp)
+    /*try
     {
-      data.add(new GraphData(timestamp, random.nextFloat() * 16.0f));
-      timestamp += 86400000L / 8;
+      Thread.sleep(1000L);
     }
-
-    return data.toArray(new GraphData[0]);
+    catch (InterruptedException e)
+    {
+      e.printStackTrace();
+    }*/
+    return m_testData;
   }
 
   @Override

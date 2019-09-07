@@ -17,11 +17,9 @@
 
     <ProgressBar
         android:id="@+id/refresh_progress"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="@id/graph_surface"
-        app:layout_constraintBottom_toBottomOf="@id/graph_surface"
-        app:layout_constraintLeft_toLeftOf="@id/graph_surface"
         app:layout_constraintRight_toRightOf="@id/graph_surface"/>
 
     <TextView
