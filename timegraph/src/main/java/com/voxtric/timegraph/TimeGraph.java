@@ -832,7 +832,7 @@ public class TimeGraph extends ConstraintLayout
             for (int i = 0; i < incorrectTimeAxisLabelCount; i++)
             {
               // Race condition: bail out here to ensure the app doesn't crash.
-              if (dataIndex > timeAxisLabelData.length)
+              if (dataIndex >= timeAxisLabelData.length)
               {
                 break;
               }

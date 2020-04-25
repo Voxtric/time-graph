@@ -25,6 +25,9 @@ public class GraphSurface extends GLSurfaceView
   private float m_clickDistanceSquared = -Float.MAX_VALUE;
   private TimeGraph.OnDataPointClickedListener m_onDataPointClickedListener = null;
 
+  private float m_startPixelX = 0.0f;
+  private float m_startPixelY = 0.0f;
+
   private float m_previousPixelX = 0.0f;
   private float m_previousPixelDistance = 0.0f;
   private boolean m_scaling = false;
@@ -74,7 +77,9 @@ public class GraphSurface extends GLSurfaceView
     {
     case MotionEvent.ACTION_DOWN:
       m_clickBeginTimestamp = System.currentTimeMillis();
-      m_previousPixelX = motionEvent.getX();
+      m_startPixelX = motionEvent.getX();
+      m_startPixelY = motionEvent.getY();
+      m_previousPixelX = m_startPixelX;
       m_ignoreScroll = false;
       handled = true;
 
@@ -89,13 +94,19 @@ public class GraphSurface extends GLSurfaceView
       break;
 
     case MotionEvent.ACTION_UP:
+      float xDifference = m_startPixelX - motionEvent.getX();
+      float yDifference = m_startPixelY - motionEvent.getY();
+      float distanceSquared = (xDifference * xDifference) + (yDifference * yDifference);
+
+      if ((m_onDataPointClickedListener != null) &&
+          (System.currentTimeMillis() - m_clickBeginTimestamp < ViewConfiguration.getLongPressTimeout()) &&
+          (distanceSquared < (m_clickDistanceSquared * 1.1f)))
+      {
+        clickDataPoint(motionEvent.getX(), motionEvent.getY());
+      }
       if (m_transformed)
       {
         m_timeGraph.refresh(false);
-      }
-      else if (m_onDataPointClickedListener != null && System.currentTimeMillis() - m_clickBeginTimestamp < ViewConfiguration.getLongPressTimeout())
-      {
-        clickDataPoint(motionEvent.getX(), motionEvent.getY());
       }
 
       if (m_disallowTouchViews != null)

@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
   private static final long MILLISECONDS_IN_DAY = 86400000L;
 
   private TimeGraph m_timeGraph = null;
-  private GraphData[] m_testData = new GraphData[250];
+  private GraphData[] m_testData = new GraphData[100];
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
@@ -46,15 +46,6 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
                                      true);
       m_timeGraph.setVisibleDataPeriod(MILLISECONDS_IN_DAY * 10, MILLISECONDS_IN_DAY * 13, MainActivity.this, true);
 
-      m_timeGraph.setOnDataPointClickedListener(new TimeGraph.OnDataPointClickedListener()
-      {
-        @Override
-        public void onDataPointClicked(TimeGraph graph, long timestamp, float value)
-        {
-          Log.e(String.valueOf(timestamp), String.valueOf(value));
-        }
-      });
-
       m_timeGraph.postDelayed(new Runnable()
       {
         @Override
@@ -69,6 +60,16 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
   public void onResume()
   {
     super.onResume();
+
+    m_timeGraph.setOnDataPointClickedListener(new TimeGraph.OnDataPointClickedListener()
+    {
+      @Override
+      public void onDataPointClicked(TimeGraph graph, long timestamp, float value)
+      {
+        Log.e("MainActivity", String.valueOf(timestamp) + ":" + String.valueOf(value));
+      }
+    });
+
     m_timeGraph.refresh(this, true);
   }
 

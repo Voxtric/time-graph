@@ -10,7 +10,7 @@ ext {
 
     publishedGroupId = 'com.voxtric.timegraph'
     artifact = 'timegraph'
-    libraryVersion = '0.7.2'
+    libraryVersion = '0.7.3'
 
     libraryDescription = 'A library for displaying a transformable line graph where the x axis is displayed in terms of points in time.'
     siteUrl = 'https://github.com/Voxtric/time-graph'
@@ -31,8 +31,8 @@ android {
     defaultConfig {
         minSdkVersion 17
         targetSdkVersion 29
-        versionCode 702
-        versionName "0.7.2"
+        versionCode 703
+        versionName "0.7.3"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -50,7 +50,7 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation 'androidx.appcompat:appcompat:1.0.2'
+    implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
     implementation 'androidx.annotation:annotation:1.1.0'
 }
