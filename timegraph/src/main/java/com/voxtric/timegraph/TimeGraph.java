@@ -204,7 +204,7 @@ public class TimeGraph extends ConstraintLayout
     float[] valueAxisMidValues = new float[m_valueAxisMidViews.size()];
     for (int i = 0; i < valueAxisMidValues.length; i++)
     {
-      valueAxisMidValues[i] = Float.valueOf(m_valueAxisMidViews.get(i).getText().toString());
+      valueAxisMidValues[i] = Float.parseFloat(m_valueAxisMidViews.get(i).getText().toString());
     }
     state.putFloatArray("valueAxisMidValues", valueAxisMidValues);
 
@@ -734,7 +734,7 @@ public class TimeGraph extends ConstraintLayout
 
   private void repositionValueAxisLabel(TextView textView)
   {
-    float value = Float.valueOf(textView.getText().toString());
+    float value = Float.parseFloat(textView.getText().toString());
     float height = ((m_valueAxisMax - value) / (m_valueAxisMax - m_valueAxisMin)) * m_graphSurfaceView.getHeight();
     textView.animate().translationY(0.0f).setDuration(0).start();
     textView.animate().translationYBy(height).setDuration(0).start();
@@ -1059,7 +1059,8 @@ public class TimeGraph extends ConstraintLayout
             while (m_newRefreshRequested)
             {
               m_newRefreshRequested = false;
-              data = m_dataProvider.getData(m_startTimestamp - timeDifference,
+              data = m_dataProvider.getData(TimeGraph.this,
+                                            m_startTimestamp - timeDifference,
                                             m_endTimestamp + timeDifference,
                                             m_startTimestamp,
                                             m_endTimestamp);

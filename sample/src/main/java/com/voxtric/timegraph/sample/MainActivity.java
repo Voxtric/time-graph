@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
   }
 
   @Override
-  public GraphData[] getData(long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp)
+  public GraphData[] getData(TimeGraph graph, long startTimestamp, long endTimestamp, long visibleStartTimestamp, long visibleEndTimestamp)
   {
     /*try
     {

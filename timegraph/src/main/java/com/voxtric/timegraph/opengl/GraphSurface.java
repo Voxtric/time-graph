@@ -180,22 +180,8 @@ public class GraphSurface extends GLSurfaceView
     }
     else
     {
-      float smallestPointDistance = Float.MAX_VALUE;
-      int clickableDataPointsCount = m_clickableDataPoints.size();
-      for (int i = 1; i < clickableDataPointsCount; i++)
-      {
-        ClickableDataPoint pointA = m_clickableDataPoints.get(i - 1);
-        ClickableDataPoint pointB = m_clickableDataPoints.get(i);
-        float xDifference = (pointB.normalisedX - pointA.normalisedX) * getWidth();
-        float yDifference = (pointB.normalisedY - pointA.normalisedY) * getHeight();
-        float distanceSquared = (xDifference * xDifference) + (yDifference * yDifference);
-        if (distanceSquared < smallestPointDistance)
-        {
-          smallestPointDistance = distanceSquared;
-        }
-      }
-      float actualDistanceHalved = Math.min((float)Math.sqrt(smallestPointDistance), getWidth() * 0.05f) * 0.5f;
-      m_clickDistanceSquared = actualDistanceHalved * actualDistanceHalved;
+      float clickDistance = (float)Math.sqrt((getWidth() * getWidth()) + (getHeight() * getHeight())) * 0.025f;
+      m_clickDistanceSquared = clickDistance * clickDistance;
     }
   }
 
@@ -206,16 +192,22 @@ public class GraphSurface extends GLSurfaceView
 
   private void clickDataPoint(float x, float y)
   {
+    ClickableDataPoint closestDataPoint = null;
+    float closestDistanceSquared = Float.MAX_VALUE;
     for (ClickableDataPoint dataPoint : m_clickableDataPoints)
     {
       float xDifference = x - (dataPoint.normalisedX * getWidth());
       float yDifference = y - (dataPoint.normalisedY * getHeight());
       float distanceSquared = (xDifference * xDifference) + (yDifference * yDifference);
-      if (distanceSquared < m_clickDistanceSquared)
+      if ((distanceSquared < m_clickDistanceSquared) && (distanceSquared < closestDistanceSquared))
       {
-        m_onDataPointClickedListener.onDataPointClicked(m_timeGraph, dataPoint.timestamp, dataPoint.value);
-        break;
+        closestDistanceSquared = distanceSquared;
+        closestDataPoint = dataPoint;
       }
+    }
+    if (closestDataPoint != null)
+    {
+      m_onDataPointClickedListener.onDataPointClicked(m_timeGraph, closestDataPoint.timestamp, closestDataPoint.value);
     }
   }
 
