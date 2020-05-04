@@ -2,8 +2,8 @@ package com.voxtric.timegraph;
 
 public class GraphData
 {
-  public long timestamp;
-  public float value;
+  public final long timestamp;
+  public final float value;
 
   public GraphData(long timestamp, float value)
   {

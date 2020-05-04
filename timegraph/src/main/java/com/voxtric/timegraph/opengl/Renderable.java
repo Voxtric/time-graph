@@ -25,10 +25,10 @@ public abstract class Renderable
       "}";
   private static int s_shaderHandle = -1;
 
-  private int m_drawOrder = 0;
+  private int m_drawOrder;
 
-  private FloatBuffer m_vertexBuffer;
-  private int m_vertexCount;
+  private final FloatBuffer m_vertexBuffer;
+  private final int m_vertexCount;
 
   Renderable(int drawOrder, float[] coords)
   {

@@ -11,9 +11,9 @@ import java.util.ArrayList;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-public class GraphRenderer implements GLSurfaceView.Renderer
+class GraphRenderer implements GLSurfaceView.Renderer
 {
-  private ArrayList<Renderable> m_renderables = new ArrayList<>();
+  private final ArrayList<Renderable> m_renderables = new ArrayList<>();
   private @ColorInt int m_clearColor;
 
   GraphRenderer(@ColorInt int clearColor)

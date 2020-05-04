@@ -16,10 +16,10 @@ public class TimeAxisLabelData
 
   private static final int MAX_LABELS = 200;
 
-  long timestamp;
-  String label;
+  final long timestamp;
+  final String label;
 
-  public TimeAxisLabelData(long timestamp, String label)
+  private TimeAxisLabelData(long timestamp, String label)
   {
     this.timestamp = timestamp;
     this.label = label;
@@ -55,7 +55,7 @@ public class TimeAxisLabelData
     return labelData;
   }
 
-  public static TimeAxisLabelData[] labelMonths(@NonNull GraphData[] data)
+  private static TimeAxisLabelData[] labelMonths(@NonNull GraphData[] data)
   {
     ArrayList<TimeAxisLabelData> timeAxisLabelData = new ArrayList<>();
     if (data.length > 0)
@@ -107,7 +107,7 @@ public class TimeAxisLabelData
     return timeAxisLabelData.toArray(new TimeAxisLabelData[0]);
   }
 
-  public static TimeAxisLabelData[] labelDays(@NonNull GraphData[] data)
+  private static TimeAxisLabelData[] labelDays(@NonNull GraphData[] data)
   {
     ArrayList<TimeAxisLabelData> timeAxisLabelData = new ArrayList<>();
     if (data.length > 0)
@@ -132,7 +132,7 @@ public class TimeAxisLabelData
     return timeAxisLabelData.toArray(new TimeAxisLabelData[0]);
   }
 
-  public static TimeAxisLabelData[] labelHours(@NonNull GraphData[] data)
+  private static TimeAxisLabelData[] labelHours(@NonNull GraphData[] data)
   {
     ArrayList<TimeAxisLabelData> timeAxisLabelData = new ArrayList<>();
     if (data.length > 0)
@@ -156,7 +156,7 @@ public class TimeAxisLabelData
     return timeAxisLabelData.toArray(new TimeAxisLabelData[0]);
   }
 
-  public static TimeAxisLabelData[] labelMinutes(@NonNull GraphData[] data)
+  private static TimeAxisLabelData[] labelMinutes(@NonNull GraphData[] data)
   {
     ArrayList<TimeAxisLabelData> timeAxisLabelData = new ArrayList<>();
     if (data.length > 0)

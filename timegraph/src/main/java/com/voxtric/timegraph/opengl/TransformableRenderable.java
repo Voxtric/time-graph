@@ -2,7 +2,6 @@ package com.voxtric.timegraph.opengl;
 
 import android.graphics.Color;
 import android.opengl.GLES20;
-import android.util.Log;
 
 import androidx.annotation.ColorInt;
 
@@ -22,7 +21,7 @@ abstract class TransformableRenderable extends Renderable
 
       "void main() {" +
       "  float scaledDifference = (xScalePosition - vertexPosition.x) * (xScale - 1.0);" +
-      "  gl_Position = vec4(vertexPosition.x - scaledDifference + xOffset, vertexPosition.y * yScale, 0, 1);" +
+      "  gl_Position = vec4(vertexPosition.x - scaledDifference + xOffset, ((vertexPosition.y + 1.0) * yScale) - 1.0, 0, 1);" +
       "}";
   private static final String FRAGMENT_SHADER_CODE =
       "precision mediump float;" +
@@ -37,7 +36,7 @@ abstract class TransformableRenderable extends Renderable
   float m_xScale = 1.0f;
   float m_xScalePosition = 0.0f;
   float m_yScale = 1.0f;
-  FloatBuffer m_colorBuffer;
+  final FloatBuffer m_colorBuffer;
 
   TransformableRenderable(int drawOrder, float[] coords, @ColorInt int color)
   {

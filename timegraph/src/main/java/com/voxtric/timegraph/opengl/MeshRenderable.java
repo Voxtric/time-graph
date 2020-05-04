@@ -23,7 +23,7 @@ public class MeshRenderable extends TransformableRenderable
 
       "void main() {" +
       "  float scaledDifference = (xScalePosition - vertexPosition.x) * (xScale - 1.0);" +
-      "  gl_Position = vec4(vertexPosition.x - scaledDifference + xOffset, vertexPosition.y * yScale, 0, 1);" +
+      "  gl_Position = vec4(vertexPosition.x - scaledDifference + xOffset, ((vertexPosition.y + 1.0) * yScale) - 1.0, 0, 1);" +
       "  fragmentColor = vertexColor;" +
       "}";
   private static final String FRAGMENT_SHADER_CODE =
@@ -36,9 +36,9 @@ public class MeshRenderable extends TransformableRenderable
       "}";
   private static int s_shaderHandle = -1;
 
-  private ShortBuffer m_indexBuffer;
-  private int m_indexCount;
-  private FloatBuffer m_colorBuffer;
+  private final ShortBuffer m_indexBuffer;
+  private final int m_indexCount;
+  private final FloatBuffer m_colorBuffer;
 
   MeshRenderable(int drawOrder, float[] coords, short[] indices, float[] colors)
   {

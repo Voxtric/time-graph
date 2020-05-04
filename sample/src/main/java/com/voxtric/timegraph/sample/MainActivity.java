@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
   private static final long MILLISECONDS_IN_DAY = 86400000L;
 
   private TimeGraph m_timeGraph = null;
-  private GraphData[] m_testData = new GraphData[100];
+  private final GraphData[] m_testData = new GraphData[100];
 
   @Override
   protected void onCreate(Bundle savedInstanceState)
@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity implements GraphDataProvider
       @Override
       public void onDataPointClicked(TimeGraph graph, long timestamp, float value)
       {
-        Log.e("MainActivity", String.valueOf(timestamp) + ":" + String.valueOf(value));
+        Log.e("MainActivity", timestamp + ":" + value);
       }
     });
 

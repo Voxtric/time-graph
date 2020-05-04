@@ -4,9 +4,9 @@ import android.widget.TextView;
 
 class TimeAxisLabel
 {
-  long timestamp;
+  final long timestamp;
   float offset;
-  TextView view;
+  final TextView view;
 
   TimeAxisLabel(TextView view)
   {
