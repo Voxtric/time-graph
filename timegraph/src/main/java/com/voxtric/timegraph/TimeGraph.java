@@ -316,7 +316,7 @@ public class TimeGraph extends ConstraintLayout
     m_graphSurfaceView.setDisallowHorizontalScrollViews(views);
   }
 
-  private void setShowValueAxis(boolean value)
+  public void setShowValueAxis(boolean value)
   {
     m_showValueAxis = value;
     int visibility = value ? View.VISIBLE : View.GONE;
@@ -363,7 +363,7 @@ public class TimeGraph extends ConstraintLayout
     return m_showValueAxis;
   }
 
-  private void setValueAxisTextSizeSp(float textSizeSp)
+  public void setValueAxisTextSizeSp(float textSizeSp)
   {
     m_valueAxisTextSizeSp = textSizeSp;
 
@@ -441,7 +441,7 @@ public class TimeGraph extends ConstraintLayout
     setValueAxisMax(max, animate);
   }
 
-  private void setValueAxisMin(float value, boolean animate)
+  public void setValueAxisMin(float value, boolean animate)
   {
     if (value >= m_valueAxisMax)
     {
@@ -459,7 +459,7 @@ public class TimeGraph extends ConstraintLayout
     return m_valueAxisMin;
   }
 
-  private void setValueAxisMax(float value, boolean animate)
+  public void setValueAxisMax(float value, boolean animate)
   {
     if (value <= m_valueAxisMin)
     {
@@ -477,7 +477,7 @@ public class TimeGraph extends ConstraintLayout
     return m_valueAxisMax;
   }
 
-  private void setShowTimeAxis(boolean value)
+  public void setShowTimeAxis(boolean value)
   {
     m_showTimeAxis = value;
     m_timeAxisLabelsLayoutView.setVisibility(value ? View.VISIBLE : View.GONE);
@@ -500,7 +500,7 @@ public class TimeGraph extends ConstraintLayout
     return m_showTimeAxis;
   }
 
-  private void setTimeAxisTextSizeSp(float textSizeSp)
+  public void setTimeAxisTextSizeSp(float textSizeSp)
   {
     m_timeAxisTextSizeSp = textSizeSp;
     int timeAxisLabelCount = m_timeAxisLabels.size();
@@ -527,7 +527,7 @@ public class TimeGraph extends ConstraintLayout
     return m_timeAxisTextSizeSp;
   }
 
-  private void setTimeAxisTextColor(@ColorInt int color)
+  public void setTimeAxisTextColor(@ColorInt int color)
   {
     m_timeAxisTextColor = color;
     int timeAxisLabelCount = m_timeAxisLabels.size();
@@ -542,7 +542,7 @@ public class TimeGraph extends ConstraintLayout
     return m_timeAxisTextColor;
   }
 
-  private void setTimeAxisMarkerColor(@ColorInt int color)
+  public void setTimeAxisMarkerColor(@ColorInt int color)
   {
     m_timeAxisMarkerColor = color;
 
@@ -565,7 +565,7 @@ public class TimeGraph extends ConstraintLayout
     return m_timeAxisMarkerColor;
   }
 
-  private void setShowNoDataText(boolean value)
+  public void setShowNoDataText(boolean value)
   {
     m_showNoDataText = value;
     if (!value)
@@ -583,7 +583,7 @@ public class TimeGraph extends ConstraintLayout
     return m_showNoDataText;
   }
 
-  private void setNoDataText(CharSequence text)
+  public void setNoDataText(CharSequence text)
   {
     m_noDataText = text;
     m_noDataView.setText(text);
@@ -594,7 +594,7 @@ public class TimeGraph extends ConstraintLayout
     return m_noDataText;
   }
 
-  private void setNoDataTextSizeSp(float textSizeSp)
+  public void setNoDataTextSizeSp(float textSizeSp)
   {
     m_noDataTextSizeSp = textSizeSp;
     m_noDataView.setTextSize(textSizeSp);
@@ -605,7 +605,7 @@ public class TimeGraph extends ConstraintLayout
     return m_timeAxisTextSizeSp;
   }
 
-  private void setNoDataTextColor(int color)
+  public void setNoDataTextColor(int color)
   {
     m_noDataTextColor = color;
     m_noDataView.setTextColor(color);
@@ -616,7 +616,7 @@ public class TimeGraph extends ConstraintLayout
     return m_noDataTextColor;
   }
 
-  private void setShowRefreshProgress(boolean value)
+  public void setShowRefreshProgress(boolean value)
   {
     m_showRefreshProgress = value;
     m_refreshProgressView.setVisibility(value && m_refreshing ? View.VISIBLE : View.INVISIBLE);
@@ -627,7 +627,7 @@ public class TimeGraph extends ConstraintLayout
     return m_showRefreshProgress;
   }
 
-  private void setGraphBackgroundColor(@ColorInt int color)
+  public void setGraphBackgroundColor(@ColorInt int color)
   {
     m_graphBackgroundColor = color;
     m_graphSurfaceView.setBackgroundColor(color);
@@ -638,7 +638,7 @@ public class TimeGraph extends ConstraintLayout
     return m_graphSurfaceView.getBackgroundColor();
   }
 
-  private void setDataLineColor(@ColorInt int color)
+  public void setDataLineColor(@ColorInt int color)
   {
     m_dataLineColor = color;
     if (m_dataLineStrip != null)
@@ -653,7 +653,7 @@ public class TimeGraph extends ConstraintLayout
     return m_dataLineColor;
   }
 
-  private void setAllowScroll(boolean allow)
+  public void setAllowScroll(boolean allow)
   {
     m_allowScroll = allow;
   }
@@ -663,7 +663,7 @@ public class TimeGraph extends ConstraintLayout
     return m_allowScroll;
   }
 
-  private void setAllowScale(boolean allow)
+  public void setAllowScale(boolean allow)
   {
     m_allowScale = allow;
   }
@@ -2113,12 +2113,12 @@ public class TimeGraph extends ConstraintLayout
     void onDataPointClicked(TimeGraph graph, long timestamp, float value);
   }
 
-  interface OnPeriodChangeListener
+  public interface OnPeriodChangeListener
   {
     void onPeriodChanged(TimeGraph graph, long startTimestamp, long endTimestamp);
   }
 
-  interface OnRefreshListener
+  public interface OnRefreshListener
   {
     void onRefresh(TimeGraph graph, long startTimestamp, long endTimestamp, GraphData[] data);
   }
